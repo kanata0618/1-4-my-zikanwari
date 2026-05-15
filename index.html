@@ -73,6 +73,31 @@
 </head>
 <body>
 
+    <script>
+
+const password = "ippei";
+
+const input = prompt("パスワードを入力");
+
+if(input !== password){
+
+document.body.innerHTML = `
+<h1 style="
+color:white;
+text-align:center;
+margin-top:100px;
+font-family:sans-serif;
+">
+アクセスできません
+</h1>
+`;
+
+throw new Error("blocked");
+
+}
+
+</script>
+
     <div class="top-box">
         <div class="date-section">
             <div id="todayBox">日付を取得中...</div>
