@@ -18,5 +18,21 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "今日の時間割",
+      "short_name": "今日時間割",
+      "description": "今日の時間割をすぐに確認します",
+      "url": "index.html?shortcut=today",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "直近の課題一覧",
+      "short_name": "課題確認",
+      "description": "直近1週間の課題を確認します",
+      "url": "index.html?shortcut=tasks",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
