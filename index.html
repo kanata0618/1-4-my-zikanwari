@@ -89,7 +89,13 @@
         .sync-btn:hover { background: #0284c7; }
 
         /* QR表示エリア */
-        #qrcodeCanvasContainer { background: white; padding: 10px; border-radius: 10px; display: none; justify-content: center; margin: 10px 0; width: fit-content; margin-left: auto; margin-right: auto; }
+        #qrcodeCanvasContainer { background: white; padding: 10px; border-radius: 10px; display: none; justify-content: center; margin: 10px 0; width: fit-content; margin-left: auto; margin-right: auto; cursor: pointer; transition: 0.2s; }
+        #qrcodeCanvasContainer:hover { transform: scale(1.03); border: 2px solid var(--accent); }
+
+        /* QR拡大用モーダルのスタイル */
+        .qr-zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 6000; }
+        .qr-zoom-box { background: white; padding: 20px; border-radius: 20px; text-align: center; max-width: 90%; }
+        .qr-zoom-box p { color: #000; font-weight: bold; margin-top: 10px; margin-bottom: 0; font-size: 14px; }
 
         .top-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
         .date-section { min-width: 200px; }
@@ -227,6 +233,13 @@
         </div>
     </div>
 
+    <div id="qrZoomModal" class="qr-zoom-modal" onclick="closeQrZoom()">
+        <div class="qr-zoom-box" onclick="event.stopPropagation()">
+            <canvas id="zoomedQrCanvas"></canvas>
+            <p>画面をタップすると閉じます</p>
+        </div>
+    </div>
+
     <div id="loginContainer">
         <div class="login-box">
             <h2>1-4 my zikanwari</h2>
@@ -253,12 +266,12 @@
                     <p style="font-size:11px; margin-top:0; color:var(--text-muted); text-align:center;">
                         <b>【PC ⇄ スマホのデータを同期する】</b>
                     </p>
-                    <button class="sync-btn" onclick="generateQRData()">QRコードをつくる (PC側)</button>
+                    <button class="sync-btn" onclick="generateQRData()">QRコードをつくる</button>
                     
-                    <div id="qrcodeCanvasContainer"><canvas id="syncQrCanvas"></canvas></div>
+                    <div id="qrcodeCanvasContainer" onclick="openQrZoom()"><canvas id="syncQrCanvas"></canvas></div>
 
                     <p style="font-size:10px; color:var(--text-muted); margin-bottom:15px; text-align:center;">
-                        ※スマホのカメラ等で上のQRコードを読み取ると、リンクから一瞬でデータを同期できます。
+                        ※上のQRコードをタップすると大画面表示になります。
                     </p>
                     
                     <hr style="border-color:#334155; margin:15px 0;">
@@ -401,6 +414,7 @@
     <script>
         const password = "ippei";
         let weekOffset = 0;
+        let lastGeneratedUrl = ""; // 現在のQRコードの中身を保持する変数
 
         function checkPassword() {
             if (document.getElementById("pwInput").value === password) {
@@ -420,7 +434,6 @@
         function switchMenuTab(tabId) {
             document.querySelectorAll(".menu-tab-content").forEach(el => el.classList.remove("active"));
             document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
-            
             if(tabId === 'sync') {
                 document.getElementById("menuTabSync").classList.add("active");
                 document.getElementById("tabBtnSync").classList.add("active");
@@ -443,59 +456,54 @@
         ];
 
         function init() {
-            renderTimetable(); 
-            setDates();        
-            updateClock(); 
-            highlightStatus(); 
-            refreshGlobalAlerts();
+            renderTimetable(); setDates(); updateClock(); highlightStatus(); refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
-            checkUrlImport(); // ページ表示時にURLパラメータからのQR同期要求があるかチェック
+            checkUrlImport(); 
         }
 
-        // 📲 新機能：QRコード自動生成システム
+        // QRコード生成
         function generateQRData() {
-            const dataBundle = {
-                tasks: tasks,
-                tests: tests,
-                completed: completed,
-                quickMemo: localStorage.getItem("quickMemo") || ""
-            };
+            const dataBundle = { tasks: tasks, tests: tests, completed: completed, quickMemo: localStorage.getItem("quickMemo") || "" };
             try {
                 const jsonStr = JSON.stringify(dataBundle);
                 const encodedStr = btoa(unescape(encodeURIComponent(jsonStr)));
-                
-                // 現在のURL（index.htmlの場所）の後ろに「?sync=暗号文字列」をくっつける
                 const baseUrl = window.location.href.split('?')[0];
-                const syncUrl = `${baseUrl}?sync=${encodedStr}`;
+                lastGeneratedUrl = `${baseUrl}?sync=${encodedStr}`;
                 
                 const canvasContainer = document.getElementById("qrcodeCanvasContainer");
                 const canvas = document.getElementById("syncQrCanvas");
                 
-                // ライブラリを使ってQRコードをキャンバスに描画
-                QRCode.toCanvas(canvas, syncUrl, { width: 180, margin: 1 }, function (error) {
-                    if (error) {
-                        showToast("QRコード生成に失敗しました", 'danger');
-                    } else {
-                        canvasContainer.style.display = "flex";
-                        showToast("同期用QRコードを表示しました！スマホで読み取ってね", 'task');
-                    }
+                QRCode.toCanvas(canvas, lastGeneratedUrl, { width: 140, margin: 1 }, function (error) {
+                    if (error) { showToast("QRコード生成に失敗しました", 'danger'); } 
+                    else { canvasContainer.style.display = "flex"; showToast("QRコードを表示しました！タップで拡大できます", 'task'); }
                 });
-            } catch(e) {
-                showToast("データ処理エラーが発生しました", 'danger');
-            }
+            } catch(e) { showToast("データ処理エラーが発生しました", 'danger'); }
         }
 
-        // 📲 QRコードからジャンプしてきた時のインポートチェック
+        // 新機能：QRコードの拡大モーダルを開く
+        function openQrZoom() {
+            if(!lastGeneratedUrl) return;
+            const modal = document.getElementById("qrZoomModal");
+            const zoomedCanvas = document.getElementById("zoomedQrCanvas");
+            
+            // 画面いっぱいに合わせた大きめのサイズ（300px）で再レンダリング
+            QRCode.toCanvas(zoomedCanvas, lastGeneratedUrl, { width: 300, margin: 2 }, function (error) {
+                if (!error) { modal.style.display = "flex"; }
+            });
+        }
+
+        // 新機能：QRコード拡大モーダルを閉じる
+        function closeQrZoom() {
+            document.getElementById("qrZoomModal").style.display = "none";
+        }
+
         function checkUrlImport() {
             const urlParams = new URLSearchParams(window.location.search);
             const syncCode = urlParams.get('sync');
             if(syncCode) {
-                // 自動的にインポートフォームへ文字を流し込み、確認画面を出す
                 document.getElementById("importCodeInput").value = syncCode;
-                // サイドバーを最初からデータ連携タブで開く
-                toggleSidebar(true);
-                switchMenuTab('sync');
-                showToast("QRコードからデータを受け取りました。②の読み込みボタンを押して確定させてください", 'warning');
+                toggleSidebar(true); switchMenuTab('sync');
+                showToast("QRデータを読み込みました。②の実行ボタンを押してください", 'warning');
             }
         }
 
@@ -505,13 +513,9 @@
                 const jsonStr = JSON.stringify(dataBundle);
                 const encodedStr = btoa(unescape(encodeURIComponent(jsonStr)));
                 const area = document.getElementById("syncCodeArea");
-                area.value = encodedStr;
-                area.select();
-                document.execCommand('copy'); 
-                showToast("呪文コードをコピーしました！", 'task');
-            } catch(e) {
-                showToast("データ生成に失敗しました", 'danger');
-            }
+                area.value = encodedStr; area.select(); document.execCommand('copy'); 
+                showToast("コードをコピーしました！", 'task');
+            } catch(e) { showToast("データ生成に失敗しました", 'danger'); }
         }
 
         function importData() {
@@ -525,25 +529,14 @@
                     try {
                         const decodedStr = decodeURIComponent(escape(atob(codeInput)));
                         const parsedData = JSON.parse(decodedStr);
-                        
                         if (parsedData.tasks && parsedData.tests && parsedData.completed) {
-                            tasks = parsedData.tasks;
-                            tests = parsedData.tests;
-                            completed = parsedData.completed;
+                            tasks = parsedData.tasks; tests = parsedData.tests; completed = parsedData.completed;
                             localStorage.setItem("quickMemo", parsedData.quickMemo || "");
-                            
-                            saveAll();
-                            init(); 
-                            document.getElementById("importCodeInput").value = "";
-                            // URLから「?sync=...」を綺麗に消してリセット
+                            saveAll(); init(); document.getElementById("importCodeInput").value = "";
                             window.history.replaceState({}, document.title, window.location.href.split('?')[0]);
                             showToast("データの同期が完了しました！", 'task');
-                        } else {
-                            showToast("無効なコードです", 'danger');
-                        }
-                    } catch(e) {
-                        showToast("データの読み込みに失敗しました", 'danger');
-                    }
+                        } else { showToast("無効なコードです", 'danger'); }
+                    } catch(e) { showToast("データの読み込みに失敗しました。移行データが大きすぎる可能性があります。", 'danger'); }
                 }
             );
         }
@@ -566,46 +559,36 @@
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalMessage").innerText = message;
             modal.style.display = "flex";
-            const btnOk = modal.querySelector("#modalOkBtn");
-            const btnCancel = modal.querySelector("#modalCancelBtn");
-            const newBtnOk = btnOk.cloneNode(true);
-            const newBtnCancel = btnCancel.cloneNode(true);
-            btnOk.parentNode.replaceChild(newBtnOk, btnOk);
-            btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+            const btnOk = modal.querySelector("#modalOkBtn"); const btnCancel = modal.querySelector("#modalCancelBtn");
+            const newBtnOk = btnOk.cloneNode(true); const newBtnCancel = btnCancel.cloneNode(true);
+            btnOk.parentNode.replaceChild(newBtnOk, btnOk); btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
             newBtnOk.onclick = () => { modal.style.display = "none"; onConfirm(); };
             newBtnCancel.onclick = () => { modal.style.display = "none"; };
         }
 
         function moveWeek(direction) {
-            const table = document.getElementById("timetable");
-            table.classList.add(direction === 1 ? "slide-right" : "slide-left");
+            const table = document.getElementById("timetable"); table.classList.add(direction === 1 ? "slide-right" : "slide-left");
             setTimeout(() => {
-                weekOffset += direction;
-                setDates();
-                highlightStatus();
-                table.classList.remove("slide-left", "slide-right");
-                table.classList.add(direction === 1 ? "slide-left" : "slide-right");
+                weekOffset += direction; setDates(); highlightStatus();
+                table.classList.remove("slide-left", "slide-right"); table.classList.add(direction === 1 ? "slide-left" : "slide-right");
                 setTimeout(() => table.classList.remove("slide-left", "slide-right"), 20);
             }, 150);
         }
 
         function setDates() {
-            const now = new Date(); const realDayNum = now.getDay(); 
-            let baseDiff = realDayNum === 6 ? 7 : 0;
+            const now = new Date(); const realDayNum = now.getDay(); let baseDiff = realDayNum === 6 ? 7 : 0;
             const targetDate = new Date(now.getTime() + (baseDiff + weekOffset * 7) * 86400000);
             const mondayDiff = targetDate.getDay() === 0 ? -6 : 1 - targetDate.getDay();
             for (let i = 1; i <= 5; i++) {
                 const target = new Date(targetDate); target.setDate(targetDate.getDate() + mondayDiff + (i - 1));
                 document.getElementById(`date-${i}`).innerText = `${target.getMonth() + 1}/${target.getDate()}`;
-                const th = document.getElementById(`th-${i}`);
-                th.classList.toggle('today-highlight', target.toDateString() === now.toDateString());
+                const th = document.getElementById(`th-${i}`); th.classList.toggle('today-highlight', target.toDateString() === now.toDateString());
             }
         }
 
         function renderTimetable() {
             const tbody = document.getElementById("timetableBody"); tbody.innerHTML = "";
-            let checkDay = new Date().getDay();
-            if (checkDay === 0 || checkDay === 6) checkDay = 1;
+            let checkDay = new Date().getDay(); if (checkDay === 0 || checkDay === 6) checkDay = 1;
             const isWednesday = (checkDay === 3);
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
