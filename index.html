@@ -72,6 +72,12 @@
         .help-section ul { padding-left: 18px; margin: 5px 0; }
         .help-section li { margin-bottom: 6px; }
 
+        /* データ連携エリア用のスタイル */
+        .sync-box { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 12px; margin-top: 10px; }
+        .sync-textarea { background: #1e293b; border: 1px solid #334155; color: white; width: 100%; height: 60px; font-size: 11px; resize: none; margin-bottom: 8px; padding: 5px; box-sizing: border-box; border-radius: 6px; }
+        .sync-btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-bottom: 5px; }
+        .sync-btn:hover { background: #0284c7; }
+
         .top-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
         .date-section { min-width: 200px; }
         #todayBox { font-size: 28px; font-weight: 800; margin-bottom: 0; }
@@ -176,7 +182,7 @@
         .btn-ok { background: var(--danger); color: white; }
         .btn-ok:hover { background: #b91c1c; }
 
-        /* 📱 スマホ（画面幅768px以下）用のメディアクエリを追加 */
+        /* スマホ用メディアクエリ */
         @media screen and (max-width: 768px) {
             body { padding: 15px; }
             #mainContent { padding-top: 45px; }
@@ -221,7 +227,22 @@
 
         <div id="sidebar" class="sidebar">
             <span class="sidebar-close" onclick="toggleSidebar(false)">&times;</span>
-            <h2>システム機能一覧</h2>
+            
+            <h2>📲 データ連携・同期</h2>
+            <div class="sync-box">
+                <p style="font-size:11px; margin-top:0; color:var(--text-muted);">
+                    【PC ➔ スマホ等のデータ移行用】
+                </p>
+                <button class="sync-btn" onclick="exportData()">① 同期データを書き出す</button>
+                <textarea id="syncCodeArea" class="sync-textarea" readonly placeholder="ここに書き出しコードが生成されます"></textarea>
+                
+                <hr style="border-color:#334155; margin:10px 0;">
+                
+                <textarea id="importCodeInput" class="sync-textarea" placeholder="受け取り側：ここにコードを貼り付け"></textarea>
+                <button class="sync-btn" style="background:var(--success);" onclick="importData()">② データを読み込む</button>
+            </div>
+
+            <h2 style="margin-top:20px;">システム機能一覧</h2>
             <div class="help-section">
                 <h3>🔒 画面内セキュアログイン</h3>
                 <ul><li>アプリ起動時にパスワード入力を求めるセキュリティ画面が立ち上がります。エンターキーでのログインにも対応。</li></ul>
@@ -378,6 +399,65 @@
             highlightStatus(); 
             refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
+        }
+
+        // 📲 1. データ書き出し（エクスポート）処理
+        function exportData() {
+            const dataBundle = {
+                tasks: tasks,
+                tests: tests,
+                completed: completed,
+                quickMemo: localStorage.getItem("quickMemo") || ""
+            };
+            // JSONのテキストをBase64という安全な英数字文字列に変換
+            try {
+                const jsonStr = JSON.stringify(dataBundle);
+                const encodedStr = btoa(unescape(encodeURIComponent(jsonStr)));
+                
+                const area = document.getElementById("syncCodeArea");
+                area.value = encodedStr;
+                area.select();
+                document.execCommand('copy'); // 自動クリップボードコピー
+                showToast("同期コードをコピーしました！移行先に貼ってね", 'task');
+            } catch(e) {
+                showToast("データ生成に失敗しました", 'danger');
+            }
+        }
+
+        // 📲 2. データ読み込み（インポート）処理
+        function importData() {
+            const codeInput = document.getElementById("importCodeInput").value.trim();
+            if(!codeInput) {
+                showToast("同期コードを入力してください！", 'warning');
+                return;
+            }
+
+            showConfirmModal(
+                "データの同期・上書き",
+                "コードのデータを読み込んでこの端末に上書きしますか？\n（現在の予定はすべて消えて置き換わります）",
+                function() {
+                    try {
+                        const decodedStr = decodeURIComponent(escape(atat = atob(codeInput)));
+                        const parsedData = JSON.parse(decodedStr);
+                        
+                        if (parsedData.tasks && parsedData.tests && parsedData.completed) {
+                            tasks = parsedData.tasks;
+                            tests = parsedData.tests;
+                            completed = parsedData.completed;
+                            localStorage.setItem("quickMemo", parsedData.quickMemo || "");
+                            
+                            saveAll();
+                            init(); // 再描画
+                            document.getElementById("importCodeInput").value = "";
+                            showToast("データの同期が完了しました！", 'task');
+                        } else {
+                            showToast("不正な同期コードです", 'danger');
+                        }
+                    } catch(e) {
+                        showToast("コードの読み込みに失敗しました", 'danger');
+                    }
+                }
+            );
         }
 
         function showToast(message, type) {
