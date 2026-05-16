@@ -59,24 +59,37 @@
         
         .sidebar {
             position: fixed; top: 0; left: -320px; width: 300px; height: 100%;
-            background: #111827; border-right: 1px solid #334155; padding: 30px 20px;
+            background: #111827; border-right: 1px solid #334155; padding: 25px 15px;
             box-sizing: border-box; z-index: 5000; transition: 0.3s ease; overflow-y: auto;
         }
         .sidebar.open { left: 0; }
-        .sidebar h2 { margin-top: 0; font-size: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .sidebar h2 { margin-top: 0; font-size: 20px; padding-bottom: 10px; margin-bottom: 15px; }
         .sidebar-close { font-size: 24px; cursor: pointer; color: var(--text-muted); float: right; margin-top: -5px; }
         .sidebar-close:hover { color: white; }
         
-        .help-section { margin-top: 20px; font-size: 13px; color: var(--text-muted); }
+        /* メニュー内タブボタンのスタイル */
+        .sidebar-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .tab-btn { background: var(--bg-card); border: 1px solid #334155; color: var(--text-muted); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; flex: 1; text-align: center; transition: 0.2s; }
+        .tab-btn:hover { background: var(--bg-hover); color: white; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
+        /* コンテンツ切り替え用 */
+        .menu-tab-content { display: none; }
+        .menu-tab-content.active { display: block; }
+
+        .help-section { font-size: 13px; color: var(--text-muted); }
         .help-section h3 { font-size: 14px; color: white; margin-bottom: 5px; margin-top: 15px; border-left: 3px solid var(--accent); padding-left: 6px; }
         .help-section ul { padding-left: 18px; margin: 5px 0; }
         .help-section li { margin-bottom: 6px; }
 
         /* データ連携エリア用のスタイル */
-        .sync-box { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 12px; margin-top: 10px; }
-        .sync-textarea { background: #1e293b; border: 1px solid #334155; color: white; width: 100%; height: 60px; font-size: 11px; resize: none; margin-bottom: 8px; padding: 5px; box-sizing: border-box; border-radius: 6px; }
-        .sync-btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-bottom: 5px; }
+        .sync-box { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 12px; }
+        .sync-textarea { background: #1e293b; border: 1px solid #334155; color: white; width: 100%; height: 50px; font-size: 11px; resize: none; margin-bottom: 8px; padding: 5px; box-sizing: border-box; border-radius: 6px; }
+        .sync-btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-bottom: 8px; }
         .sync-btn:hover { background: #0284c7; }
+
+        /* QR表示エリア */
+        #qrcodeCanvasContainer { background: white; padding: 10px; border-radius: 10px; display: none; justify-content: center; margin: 10px 0; width: fit-content; margin-left: auto; margin-right: auto; }
 
         .top-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
         .date-section { min-width: 200px; }
@@ -197,6 +210,7 @@
             .input-box { padding: 15px; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -227,44 +241,67 @@
 
         <div id="sidebar" class="sidebar">
             <span class="sidebar-close" onclick="toggleSidebar(false)">&times;</span>
+            <h2 id="sidebarMainTitle">メニュー</h2>
             
-            <h2>📲 データ連携・同期</h2>
-            <div class="sync-box">
-                <p style="font-size:11px; margin-top:0; color:var(--text-muted);">
-                    【PC ➔ スマホ等のデータ移行用】
-                </p>
-                <button class="sync-btn" onclick="exportData()">① 同期データを書き出す</button>
-                <textarea id="syncCodeArea" class="sync-textarea" readonly placeholder="ここに書き出しコードが生成されます"></textarea>
-                
-                <hr style="border-color:#334155; margin:10px 0;">
-                
-                <textarea id="importCodeInput" class="sync-textarea" placeholder="受け取り側：ここにコードを貼り付け"></textarea>
-                <button class="sync-btn" style="background:var(--success);" onclick="importData()">② データを読み込む</button>
+            <div class="sidebar-tabs">
+                <button id="tabBtnSync" class="tab-btn active" onclick="switchMenuTab('sync')">データ連携</button>
+                <button id="tabBtnHelp" class="tab-btn" onclick="switchMenuTab('help')">使い方ガイド</button>
+            </div>
+            
+            <div id="menuTabSync" class="menu-tab-content active">
+                <div class="sync-box">
+                    <p style="font-size:11px; margin-top:0; color:var(--text-muted); text-align:center;">
+                        <b>【PC ⇄ スマホのデータを同期する】</b>
+                    </p>
+                    <button class="sync-btn" onclick="generateQRData()">QRコードをつくる (PC側)</button>
+                    
+                    <div id="qrcodeCanvasContainer"><canvas id="syncQrCanvas"></canvas></div>
+
+                    <p style="font-size:10px; color:var(--text-muted); margin-bottom:15px; text-align:center;">
+                        ※スマホのカメラ等で上のQRコードを読み取ると、リンクから一瞬でデータを同期できます。
+                    </p>
+                    
+                    <hr style="border-color:#334155; margin:15px 0;">
+                    <p style="font-size:11px; color:var(--text-muted); text-align:center;"><b>【バックアップ用呪文コード】</b></p>
+                    <button class="sync-btn" style="background:#475569;" onclick="exportData()">コードを書き出す</button>
+                    <textarea id="syncCodeArea" class="sync-textarea" readonly placeholder="生成されたコードがここに出ます"></textarea>
+                    
+                    <textarea id="importCodeInput" class="sync-textarea" placeholder="ここにコード、またはQRの中身を貼り付け"></textarea>
+                    <button class="sync-btn" style="background:var(--success);" onclick="importData()">データを読み込む</button>
+                </div>
             </div>
 
-            <h2 style="margin-top:20px;">システム機能一覧</h2>
-            <div class="help-section">
-                <h3>🔒 画面内セキュアログイン</h3>
-                <ul><li>アプリ起動時にパスワード入力を求めるセキュリティ画面が立ち上がります。エンターキーでのログインにも対応。</li></ul>
-                <h3>📅 スケジュール追加・編集</h3>
-                <ul><li>教科マスをクリックして「課題」または「テスト」を分別登録。メモ書きの追加、あとからの編集、削除、提出トグル処理が自由に行えます。</li></ul>
-                <h3>🔀 週の切り替え</h3>
-                <ul><li>左上の「◀ 前週」「次週 ▶」ボタンで、過去や未来の週へ自由に行き来可能。土曜日になると、自動で次週の時間割スケジュールに自動ジャンプします。</li></ul>
-                <h3>🔔 ホームの直近アラート</h3>
-                <ul><li>ホーム右上に「期限切れ」「今日締め切り」に加え、新たに「明日締め切り」のタスクも自動収集してリスト表示します。</li></ul>
-                <h3>📊 30日間予定オーバービュー</h3>
-                <ul><li>直近の課題/テストエリアのカードをタップすると、今後1ヶ月間の全スケジュールを日付順にソートした大型ポップアップ画面が開きます。</li></ul>
-                <h3>🎨 優先度別・マルチカラー枠線</h3>
-                <ul>
-                    <li><span style="color:var(--accent);">■</span> <b>青実線</b>：当日の曜日ライン（平日のみ）</li>
-                    <li><span style="color:var(--task-border);">■</span> <b>オレンジ点線</b>：1週間以内に提出物の期限あり</li>
-                    <li><span style="color:var(--danger);">■</span> <b>赤点線</b>：1週間以内にテストの実施あり</li>
-                    <li><span style="color:white; border:1px dashed #334155; padding:0 3px;">■</span> <b>2色混ざり点線</b>：課題とテストが同じ週に重複</li>
-                </ul>
-                <h3>💬 インラインスマート通知</h3>
-                <ul><li>ブラウザのポップアップを完全撤廃。追加、保存、削除、提出、およびエラー警告のすべてが、右上のトーストまたは中央ダイアログで美しく自動完結します。</li></ul>
-                <h3>📝 クイックローカルメモ</h3>
-                <ul><li>ホームのメモエリアは一文字打つごとに自動保存され、ブラウザを閉じても次回起動時にそのまま残ります。</li></ul>
+            <div id="menuTabHelp" class="menu-tab-content">
+                <div class="help-section">
+                    <h3>📅 課題やテストを登録する</h3>
+                    <ul>
+                        <li>時間割の<b>教科のマス</b>を直接タップすると、その教科専用の課題やテストを追加できます。</li>
+                    </ul>
+                    <h3>🔀 先週・来週の時間割を見る</h3>
+                    <ul>
+                        <li>左上の日付の横にある「<b>◀ 前週</b>」「<b>次週 ▶</b>」ボタンを押すと、来週や過去の時間割へ切り替えられます。</li>
+                        <li><b>土曜日</b>になると、自動で来週の時間割へページが切り替わります。</li>
+                    </ul>
+                    <h3>🔔 提出期限のちかい予定</h3>
+                    <ul>
+                        <li>ホーム画面の右上に<b>「期限切れ」「今日締め切り」「明日締め切り」</b>の予定が自動でまとめて表示されます。ここをタップすれば、直接内容を確認・提出できます。</li>
+                    </ul>
+                    <h3>📊 1ヶ月分の予定をまとめて見る</h3>
+                    <ul>
+                        <li>ホーム右上の「直近の課題」または「直近のテスト」のカード自体をタップすると、<b>今後30日間の全予定を日付順に一覧表示</b>できます。</li>
+                    </ul>
+                    <h3>🎨 ひと目でわかるマスの枠線ルール</h3>
+                    <ul>
+                        <li><span style="color:var(--accent);">■</span> <b>青い実線</b>：今日の時間割です。</li>
+                        <li><span style="color:var(--task-border);">■</span> <b>オレンジ点線</b>：1週間以内に提出する課題があります。</li>
+                        <li><span style="color:var(--danger);">■</span> <b>赤い点線</b>：1週間以内にテストがあります。</li>
+                        <li><span style="color:white; border:1px dashed #334155; padding:0 3px;">■</span> <b>2色の点線</b>：同じ週に課題もテストも重なっています。</li>
+                    </ul>
+                    <h3>📝 自由なメモ書き</h3>
+                    <ul>
+                        <li>ホーム画面右上にあるメモ欄は、文字を打つだけで自動で保存されます。アプリを閉じても消えません。</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -380,6 +417,19 @@
             document.getElementById("sidebar").classList.toggle("open", open);
         }
 
+        function switchMenuTab(tabId) {
+            document.querySelectorAll(".menu-tab-content").forEach(el => el.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+            
+            if(tabId === 'sync') {
+                document.getElementById("menuTabSync").classList.add("active");
+                document.getElementById("tabBtnSync").classList.add("active");
+            } else if(tabId === 'help') {
+                document.getElementById("menuTabHelp").classList.add("active");
+                document.getElementById("tabBtnHelp").classList.add("active");
+            }
+        }
+
         let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
         let tests = JSON.parse(localStorage.getItem("tests")) || [];
         let completed = JSON.parse(localStorage.getItem("completed")) || [];
@@ -399,45 +449,81 @@
             highlightStatus(); 
             refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
+            checkUrlImport(); // ページ表示時にURLパラメータからのQR同期要求があるかチェック
         }
 
-        // 📲 1. データ書き出し（エクスポート）処理
-        function exportData() {
+        // 📲 新機能：QRコード自動生成システム
+        function generateQRData() {
             const dataBundle = {
                 tasks: tasks,
                 tests: tests,
                 completed: completed,
                 quickMemo: localStorage.getItem("quickMemo") || ""
             };
-            // JSONのテキストをBase64という安全な英数字文字列に変換
             try {
                 const jsonStr = JSON.stringify(dataBundle);
                 const encodedStr = btoa(unescape(encodeURIComponent(jsonStr)));
                 
+                // 現在のURL（index.htmlの場所）の後ろに「?sync=暗号文字列」をくっつける
+                const baseUrl = window.location.href.split('?')[0];
+                const syncUrl = `${baseUrl}?sync=${encodedStr}`;
+                
+                const canvasContainer = document.getElementById("qrcodeCanvasContainer");
+                const canvas = document.getElementById("syncQrCanvas");
+                
+                // ライブラリを使ってQRコードをキャンバスに描画
+                QRCode.toCanvas(canvas, syncUrl, { width: 180, margin: 1 }, function (error) {
+                    if (error) {
+                        showToast("QRコード生成に失敗しました", 'danger');
+                    } else {
+                        canvasContainer.style.display = "flex";
+                        showToast("同期用QRコードを表示しました！スマホで読み取ってね", 'task');
+                    }
+                });
+            } catch(e) {
+                showToast("データ処理エラーが発生しました", 'danger');
+            }
+        }
+
+        // 📲 QRコードからジャンプしてきた時のインポートチェック
+        function checkUrlImport() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const syncCode = urlParams.get('sync');
+            if(syncCode) {
+                // 自動的にインポートフォームへ文字を流し込み、確認画面を出す
+                document.getElementById("importCodeInput").value = syncCode;
+                // サイドバーを最初からデータ連携タブで開く
+                toggleSidebar(true);
+                switchMenuTab('sync');
+                showToast("QRコードからデータを受け取りました。②の読み込みボタンを押して確定させてください", 'warning');
+            }
+        }
+
+        function exportData() {
+            const dataBundle = { tasks: tasks, tests: tests, completed: completed, quickMemo: localStorage.getItem("quickMemo") || "" };
+            try {
+                const jsonStr = JSON.stringify(dataBundle);
+                const encodedStr = btoa(unescape(encodeURIComponent(jsonStr)));
                 const area = document.getElementById("syncCodeArea");
                 area.value = encodedStr;
                 area.select();
-                document.execCommand('copy'); // 自動クリップボードコピー
-                showToast("同期コードをコピーしました！移行先に貼ってね", 'task');
+                document.execCommand('copy'); 
+                showToast("呪文コードをコピーしました！", 'task');
             } catch(e) {
                 showToast("データ生成に失敗しました", 'danger');
             }
         }
 
-        // 📲 2. データ読み込み（インポート）処理
         function importData() {
             const codeInput = document.getElementById("importCodeInput").value.trim();
-            if(!codeInput) {
-                showToast("同期コードを入力してください！", 'warning');
-                return;
-            }
+            if(!codeInput) { showToast("コードが入力されていません！", 'warning'); return; }
 
             showConfirmModal(
                 "データの同期・上書き",
-                "コードのデータを読み込んでこの端末に上書きしますか？\n（現在の予定はすべて消えて置き換わります）",
+                "読み込んだデータに置き換えますか？\n（現在の予定はすべて消えて上書きされます）",
                 function() {
                     try {
-                        const decodedStr = decodeURIComponent(escape(atat = atob(codeInput)));
+                        const decodedStr = decodeURIComponent(escape(atob(codeInput)));
                         const parsedData = JSON.parse(decodedStr);
                         
                         if (parsedData.tasks && parsedData.tests && parsedData.completed) {
@@ -447,14 +533,16 @@
                             localStorage.setItem("quickMemo", parsedData.quickMemo || "");
                             
                             saveAll();
-                            init(); // 再描画
+                            init(); 
                             document.getElementById("importCodeInput").value = "";
+                            // URLから「?sync=...」を綺麗に消してリセット
+                            window.history.replaceState({}, document.title, window.location.href.split('?')[0]);
                             showToast("データの同期が完了しました！", 'task');
                         } else {
-                            showToast("不正な同期コードです", 'danger');
+                            showToast("無効なコードです", 'danger');
                         }
                     } catch(e) {
-                        showToast("コードの読み込みに失敗しました", 'danger');
+                        showToast("データの読み込みに失敗しました", 'danger');
                     }
                 }
             );
@@ -464,22 +552,13 @@
             const container = document.getElementById("toastContainer");
             const toast = document.createElement("div");
             toast.className = "toast-notification";
-            
             let iconColor = 'var(--accent)';
             if(type === 'test' || type === 'warning') iconColor = 'var(--warning)';
-            if(type === 'danger') {
-                iconColor = 'var(--danger)';
-                toast.classList.add("toast-danger");
-            }
-            
+            if(type === 'danger') { iconColor = 'var(--danger)'; toast.classList.add("toast-danger"); }
             toast.innerHTML = `<span class="toast-icon" style="background:${iconColor};"></span>${message}`;
             container.appendChild(toast);
-            
             setTimeout(() => toast.classList.add("show"), 50);
-            setTimeout(() => {
-                toast.classList.remove("show");
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         function showConfirmModal(title, message, onConfirm) {
@@ -487,15 +566,12 @@
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalMessage").innerText = message;
             modal.style.display = "flex";
-            
             const btnOk = modal.querySelector("#modalOkBtn");
             const btnCancel = modal.querySelector("#modalCancelBtn");
-            
             const newBtnOk = btnOk.cloneNode(true);
             const newBtnCancel = btnCancel.cloneNode(true);
             btnOk.parentNode.replaceChild(newBtnOk, btnOk);
             btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
-            
             newBtnOk.onclick = () => { modal.style.display = "none"; onConfirm(); };
             newBtnCancel.onclick = () => { modal.style.display = "none"; };
         }
@@ -503,12 +579,10 @@
         function moveWeek(direction) {
             const table = document.getElementById("timetable");
             table.classList.add(direction === 1 ? "slide-right" : "slide-left");
-
             setTimeout(() => {
                 weekOffset += direction;
                 setDates();
                 highlightStatus();
-
                 table.classList.remove("slide-left", "slide-right");
                 table.classList.add(direction === 1 ? "slide-left" : "slide-right");
                 setTimeout(() => table.classList.remove("slide-left", "slide-right"), 20);
@@ -516,92 +590,53 @@
         }
 
         function setDates() {
-            const now = new Date(); 
-            const realDayNum = now.getDay(); 
-            let baseDiff = realDayNum === 6 ? 7 : (realDayNum === 0 ? 0 : 0);
-            
+            const now = new Date(); const realDayNum = now.getDay(); 
+            let baseDiff = realDayNum === 6 ? 7 : 0;
             const targetDate = new Date(now.getTime() + (baseDiff + weekOffset * 7) * 86400000);
             const mondayDiff = targetDate.getDay() === 0 ? -6 : 1 - targetDate.getDay();
-            
             for (let i = 1; i <= 5; i++) {
-                const target = new Date(targetDate); 
-                target.setDate(targetDate.getDate() + mondayDiff + (i - 1));
-                
+                const target = new Date(targetDate); target.setDate(targetDate.getDate() + mondayDiff + (i - 1));
                 document.getElementById(`date-${i}`).innerText = `${target.getMonth() + 1}/${target.getDate()}`;
-                
                 const th = document.getElementById(`th-${i}`);
                 th.classList.toggle('today-highlight', target.toDateString() === now.toDateString());
             }
         }
 
         function renderTimetable() {
-            const tbody = document.getElementById("timetableBody");
-            tbody.innerHTML = "";
-            
+            const tbody = document.getElementById("timetableBody"); tbody.innerHTML = "";
             let checkDay = new Date().getDay();
             if (checkDay === 0 || checkDay === 6) checkDay = 1;
             const isWednesday = (checkDay === 3);
-
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td class="period">
-                        <span style="font-size:24px; font-weight:800;">${row[0]}</span><br>
-                        <span style="font-size:10px; color:#64748b;">${row[1]}</span>
-                    </td>
-                `;
+                tr.innerHTML = `<td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${row[1]}</span></td>`;
                 for(let i=2; i<=6; i++) {
-                    const subject = row[i]; 
-                    const td = document.createElement("td");
-                    
-                    if(subject) { 
-                        td.className = ["mon", "tue", "wed", "thu", "fri"][i-2]; 
-                        td.dataset.subject = subject; 
-                        td.innerText = subject; 
-                        td.onclick = () => openSubject(subject); 
-                    } else { 
-                        td.className = "blank"; 
-                    }
+                    const subject = row[i]; const td = document.createElement("td");
+                    if(subject) { td.className = ["mon", "tue", "wed", "thu", "fri"][i-2]; td.dataset.subject = subject; td.innerText = subject; td.onclick = () => openSubject(subject); }
+                    else { td.className = "blank"; }
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
             });
         }
 
-        function openSubject(subject) { 
-            currentSubject = subject; 
-            document.getElementById("subjectTitle").innerText = subject; 
-            document.getElementById("popup").style.display = "flex"; 
-            renderPopupLists(); 
-        }
+        function openSubject(subject) { currentSubject = subject; document.getElementById("subjectTitle").innerText = subject; document.getElementById("popup").style.display = "flex"; renderPopupLists(); }
         function closePopup() { document.getElementById("popup").style.display = "none"; refreshGlobalAlerts(); highlightStatus(); }
 
         function addItem(type) {
             const titleInput = document.getElementById(type === 'task' ? "taskTitle" : "testTitle");
             const dateInput = document.getElementById(type === 'task' ? "taskDeadline" : "testDate");
-            const noteInput = document.getElementById(type === 'task' ? "taskNote" : "testNote");
-            
-            if(!titleInput.value || !dateInput.value) { 
-                showToast("内容と日付を入力してください！", 'warning'); 
-                return; 
-            }
-            
-            const newItem = { subject: currentSubject, title: titleInput.value, date: dateInput.value, note: noteInput.value, id: Date.now(), type: type };
+            if(!titleInput.value || !dateInput.value) { showToast("内容と日付を入力してください！", 'warning'); return; }
+            const newItem = { subject: currentSubject, title: titleInput.value, date: dateInput.value, note: document.getElementById(type === 'task' ? "taskNote" : "testNote").value, id: Date.now(), type: type };
             (type === 'task' ? tasks : tests).push(newItem);
-            
             const itemLabel = type === 'task' ? "課題" : "テスト";
-            titleInput.value = ""; dateInput.value = ""; noteInput.value = "";
-            saveAll(); renderPopupLists(); highlightStatus();
-            
-            showToast(`${currentSubject}の${itemLabel}を追加しました！`, type);
+            titleInput.value = ""; dateInput.value = ""; document.getElementById(type === 'task' ? "taskNote" : "testNote").value = "";
+            saveAll(); renderPopupLists(); highlightStatus(); showToast(`${currentSubject}の${itemLabel}を追加しました！`, type);
         }
 
         function renderPopupLists() {
-            const list = document.getElementById("activeList");
-            const cList = document.getElementById("completedList");
-            list.innerHTML = "<h3>現在の予定</h3>";
-            cList.innerHTML = "";
-            
+            const list = document.getElementById("activeList"); const cList = document.getElementById("completedList");
+            list.innerHTML = "<h3>現在の予定</h3>"; cList.innerHTML = "";
             [...tasks, ...tests].filter(t => t.subject === currentSubject).forEach(item => {
                 list.innerHTML += `<div class="card ${item.type==='test'?'test-card':''}" onclick="openDetail('${item.type}', ${item.id})"><div>${getStatusLabel(item.date)}<strong>${item.title}</strong></div></div>`;
             });
@@ -611,15 +646,11 @@
         }
 
         function openDetail(type, id) {
-            const item = (type === 'task' ? tasks : tests).find(t => t.id === id);
-            if(!item) return;
-            const view = document.getElementById("detailView");
-            view.innerHTML = `
+            const item = (type === 'task' ? tasks : tests).find(t => t.id === id); if(!item) return;
+            document.getElementById("detailView").innerHTML = `
                 <div id="viewMode">
                     <h2 style="margin-top:0; color:var(--accent);">${item.subject}</h2>
-                    <p><strong>内容:</strong> ${item.title}</p>
-                    <p><strong>日付:</strong> ${item.date}</p>
-                    <p><strong>メモ:</strong> ${item.note || 'なし'}</p>
+                    <p><strong>内容:</strong> ${item.title}</p><p><strong>日付:</strong> ${item.date}</p><p><strong>メモ:</strong> ${item.note || 'なし'}</p>
                     <div style="display:grid; gap:10px; margin-top:20px;">
                         <button class="add-btn" style="background:var(--success); color:white;" onclick="completeItem('${type}', ${id}); closeDetail();">提出</button>
                         <button class="add-btn" style="background:var(--accent); color:white;" onclick="toggleEditMode()">編集する</button>
@@ -628,149 +659,61 @@
                 </div>
                 <div id="editMode" style="display:none;">
                     <h2 style="margin-top:0;">内容の編集</h2>
-                    <input type="text" id="editTitle" value="${item.title}">
-                    <input type="date" id="editDate" value="${item.date}">
-                    <textarea id="editNote" style="height:80px;">${item.note || ''}</textarea>
-                    <div style="display:grid; gap:10px;">
-                        <button class="add-btn" style="background:var(--success); color:white;" onclick="saveEdit('${type}', ${id})">保存</button>
-                        <button class="add-btn" style="background:var(--bg-hover); color:white;" onclick="toggleEditMode()">戻る</button>
-                    </div>
+                    <input type="text" id="editTitle" value="${item.title}"><input type="date" id="editDate" value="${item.date}"><textarea id="editNote" style="height:80px;">${item.note || ''}</textarea>
+                    <div style="display:grid; gap:10px;"><button class="add-btn" style="background:var(--success); color:white;" onclick="saveEdit('${type}', ${id})">保存</button><button class="add-btn" style="background:var(--bg-hover); color:white;" onclick="toggleEditMode()">戻る</button></div>
                 </div>`;
             document.getElementById("detailPopup").style.display = "flex";
         }
 
         function openMonthOverview(type) {
             document.getElementById("monthPopupTitle").innerText = type === 'task' ? "今後1ヶ月の課題一覧" : "今後1ヶ月のテスト一覧";
-            const listEl = document.getElementById("monthPopupList");
-            const today = new Date(); today.setHours(0,0,0,0);
-            const oneMonthLater = new Date(today.getTime() + 30 * 86400000);
-            
-            const filtered = (type === 'task' ? tasks : tests).filter(item => {
-                if(!item.date) return false;
-                const d = new Date(item.date); return d >= today && d <= oneMonthLater;
-            }).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            listEl.innerHTML = filtered.length === 0 ? 
-                `<p style="text-align:center; color:var(--text-muted);">予定はありません。</p>` : 
-                filtered.map(item => `
-                    <div class="month-list-item" onclick="closeMonthOverview(); openDetail('${type}', ${item.id});">
-                        <div><span style="color:var(--accent); font-weight:bold; margin-right:10px;">[${item.subject}]</span>${item.title}</div>
-                        <div>${getStatusLabel(item.date)}</div>
-                    </div>`).join("");
+            const listEl = document.getElementById("monthPopupList"); const today = new Date(); today.setHours(0,0,0,0);
+            const filtered = (type === 'task' ? tasks : tests).filter(item => { if(!item.date) return false; const d = new Date(item.date); return d >= today && d <= new Date(today.getTime() + 30 * 86400000); }).sort((a, b) => new Date(a.date) - new Date(b.date));
+            listEl.innerHTML = filtered.length === 0 ? `<p style="text-align:center; color:var(--text-muted);">予定はありません。</p>` : filtered.map(item => `<div class="month-list-item" onclick="closeMonthOverview(); openDetail('${type}', ${item.id});"><div><span style="color:var(--accent); font-weight:bold; margin-right:10px;">[${item.subject}]</span>${item.title}</div><div>${getStatusLabel(item.date)}</div></div>`).join("");
             document.getElementById("monthPopup").style.display = "flex";
         }
 
         function closeMonthOverview() { document.getElementById("monthPopup").style.display = "none"; }
-
-        function toggleEditMode() {
-            const v = document.getElementById("viewMode"), e = document.getElementById("editMode");
-            const isView = v.style.display !== "none";
-            v.style.display = isView ? "none" : "block";
-            e.style.display = isView ? "block" : "none";
-        }
-
-        function saveEdit(type, id) {
-            const item = (type === 'task' ? tasks : tests).find(t => t.id === id);
-            item.title = document.getElementById("editTitle").value;
-            item.date = document.getElementById("editDate").value;
-            item.note = document.getElementById("editNote").value;
-            saveAll(); showToast("変更を保存しました！", type); closeDetail();
-        }
-
-        function deleteItem(type, id) {
-            showConfirmModal(
-                "項目の削除", 
-                "この予定を時間割から完全に削除しますか？\n（この操作は取り消せません）", 
-                function() {
-                    if(type === 'task') tasks = tasks.filter(t => t.id !== id); 
-                    else tests = tests.filter(t => t.id !== id);
-                    saveAll(); 
-                    showToast("予定を削除しました", 'danger'); 
-                    closeDetail();
-                }
-            );
-        }
-
-        function completeItem(type, id) {
-            let list = (type === 'task' ? tasks : tests);
-            let idx = list.findIndex(t => t.id === id);
-            if(idx > -1) { 
-                let item = list.splice(idx, 1)[0]; item.type = type; completed.push(item); saveAll(); 
-                showToast("提出済みに移動しました！", 'task');
-            }
-        }
-
-        function undoItem(id) {
-            let idx = completed.findIndex(c => c.id === id);
-            if(idx > -1) { 
-                let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); 
-                showToast("予定を未完了に戻しました", item.type);
-                renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); 
-            }
-        }
-
+        function toggleEditMode() { const v = document.getElementById("viewMode"), e = document.getElementById("editMode"); const isView = v.style.display !== "none"; v.style.display = isView ? "none" : "block"; e.style.display = isView ? "block" : "none"; }
+        function saveEdit(type, id) { const item = (type === 'task' ? tasks : tests).find(t => t.id === id); item.title = document.getElementById("editTitle").value; item.date = document.getElementById("editDate").value; item.note = document.getElementById("editNote").value; saveAll(); showToast("変更を保存しました！", type); closeDetail(); }
+        function deleteItem(type, id) { showConfirmModal("項目の削除", "この予定を時間割から完全に削除しますか？\n（この操作は取り消せません）", function() { if(type === 'task') tasks = tasks.filter(t => t.id !== id); else tests = tests.filter(t => t.id !== id); saveAll(); showToast("予定を削除しました", 'danger'); closeDetail(); }); }
+        function completeItem(type, id) { let list = (type === 'task' ? tasks : tests); let idx = list.findIndex(t => t.id === id); if(idx > -1) { let item = list.splice(idx, 1)[0]; item.type = type; completed.push(item); saveAll(); showToast("提出済みに移動しました！", 'task'); } }
+        function undoItem(id) { let idx = completed.findIndex(c => c.id === id); if(idx > -1) { let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); showToast("予定を未完了に戻しました", item.type); renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); } }
         function closeDetail() { document.getElementById("detailPopup").style.display = "none"; renderPopupLists(); highlightStatus(); refreshGlobalAlerts(); }
-
-        function saveAll() {
-            localStorage.setItem("tasks", JSON.stringify(tasks));
-            localStorage.setItem("tests", JSON.stringify(tests));
-            localStorage.setItem("completed", JSON.stringify(completed));
-        }
+        function saveAll() { localStorage.setItem("tasks", JSON.stringify(tasks)); localStorage.setItem("tests", JSON.stringify(tests)); localStorage.setItem("completed", JSON.stringify(completed)); }
 
         function getStatusLabel(dateStr) {
             if (!dateStr) return '<span class="alert-label" style="background:#64748b; color:white;">未定</span>';
-            const today = new Date(); today.setHours(0,0,0,0);
-            const tomorrow = new Date(today.getTime() + 86400000);
-            const target = new Date(dateStr);
-            
+            const today = new Date(); today.setHours(0,0,0,0); const target = new Date(dateStr);
             if(dateStr === today.toLocaleDateString('sv-SE')) return '<span class="alert-label label-today">今日</span>';
-            if(dateStr === tomorrow.toLocaleDateString('sv-SE')) return '<span class="alert-label label-tomorrow">明日</span>';
+            if(dateStr === new Date(today.getTime() + 86400000).toLocaleDateString('sv-SE')) return '<span class="alert-label label-tomorrow">明日</span>';
             if(target < today) return '<span class="alert-label label-overdue">期限切れ</span>';
             return `<span class="alert-label" style="background:#059669; color:white;">${dateStr.slice(5)}</span>`;
         }
 
         function highlightStatus() {
-            const now = new Date();
-            const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
-            const today = new Date(); today.setHours(0,0,0,0);
-            const oneWeekLater = new Date(today.getTime() + 7 * 86400000);
-
+            const now = new Date(); const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
+            const today = new Date(); today.setHours(0,0,0,0); const oneWeekLater = new Date(today.getTime() + 7 * 86400000);
             const activeTaskSubj = [...new Set(tasks.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
             const activeTestSubj = [...new Set(tests.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
-
             document.querySelectorAll("td:not(.period):not(.blank)").forEach(td => {
                 td.classList.remove("today-class", "has-task", "has-test", "has-both");
-                
-                if (weekOffset === 0 && td.classList.contains(realDayClass)) {
-                    td.classList.add("today-class");
-                }
-                
-                const hasTask = activeTaskSubj.includes(td.dataset.subject);
-                const hasTest = activeTestSubj.includes(td.dataset.subject);
-
-                if (hasTask && hasTest) td.classList.add("has-both");
-                else if (hasTest) td.classList.add("has-test");
-                else if (hasTask) td.classList.add("has-task");
+                if (weekOffset === 0 && td.classList.contains(realDayClass)) { td.classList.add("today-class"); }
+                const hasTask = activeTaskSubj.includes(td.dataset.subject); const hasTest = activeTestSubj.includes(td.dataset.subject);
+                if (hasTask && hasTest) td.classList.add("has-both"); else if (hasTest) td.classList.add("has-test"); else if (hasTask) td.classList.add("has-task");
             });
         }
 
         function refreshGlobalAlerts() {
-            const d = new Date(); d.setHours(0,0,0,0);
-            const todayStr = d.toLocaleDateString('sv-SE');
-            const tomorrowStr = new Date(d.getTime() + 86400000).toLocaleDateString('sv-SE');
-            
+            const d = new Date(); d.setHours(0,0,0,0); const todayStr = d.toLocaleDateString('sv-SE'); const tomorrowStr = new Date(d.getTime() + 86400000).toLocaleDateString('sv-SE');
             const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
             const getFiltered = (data) => data.filter(t => t.date && (t.date === todayStr || t.date === tomorrowStr || new Date(t.date) < d)).sort((a,b) => new Date(a.date) - new Date(b.date));
-            
             document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
             document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
         }
 
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
-        function updateClock() { 
-            const now = new Date(); const week = ["日","月","火","水","木","金","土"]; 
-            document.getElementById("todayBox").innerText = `${now.getMonth()+1}月 ${now.getDate()}日 (${week[now.getDay()]})`; 
-        }
+        function updateClock() { document.getElementById("todayBox").innerText = `${new Date().getMonth()+1}月 ${new Date().getDate()}日 (${["日","月","火","水","木","金","土"][new Date().getDay()]})`; }
     </script>
 </body>
 </html>
