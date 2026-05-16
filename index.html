@@ -263,12 +263,6 @@
                         ※上のQRコードをタップすると大画面表示になります。
                     </p>
                     
-                    <div style="margin-top:10px; padding:12px; background:#1e293b; border:1px dashed var(--accent); border-radius:8px;">
-                        <p style="font-size:11px; margin:0 0 8px 0; color:var(--text-muted); text-align:center;">長押し追加できないAndroid向けウィジェット追加ボタン</p>
-                        <button class="sync-btn" style="background:#f59e0b; font-size:11px; margin-bottom:5px;" onclick="forceAddAndroidShortcut('today')">「今日の時間割」をホームに直接追加</button>
-                        <button class="sync-btn" style="background:#10b981; font-size:11px; margin-bottom:0;" onclick="forceAddAndroidShortcut('tasks')">「直近の課題一覧」をホームに直接追加</button>
-                    </div>
-
                     <hr style="border-color:#334155; margin:15px 0;">
                     <p style="font-size:11px; color:var(--text-muted); text-align:center;"><b>【バックアップ用同期コード】</b></p>
                     <button class="sync-btn" style="background:#475569;" onclick="exportData()">コードを書き出す</button>
@@ -421,40 +415,6 @@
             }
         });
 
-        // 🚀 Android専用：長押し制限を破壊して直接ホーム画面用のブックマークショートカットを生成する
-        function forceAddAndroidShortcut(type) {
-            const baseUrl = window.location.href.split('?')[0];
-            const targetUrl = `${baseUrl}?shortcut=${type}`;
-            
-            showConfirmModal(
-                "ホーム画面に追加",
-                "Androidの自動追加ポップアップを起動します。\n画面の指示に従って「自動追加」を選択してください。",
-                function() {
-                    // PWA ShortcutAPIが弾かれた際のフォールバックとして、ブラウザのショートカット追加APIを直接トリガー
-                    if ('b_shortcut' in window || navigator.userAgent.includes('Android')) {
-                        const link = document.createElement('a');
-                        link.href = targetUrl;
-                        // Android Chromeにショートカット用リンクとして認識させる
-                        link.rel = 'sidebar'; 
-                        link.title = type === 'today' ? '今日の時間割' : '直近の課題一覧';
-                        
-                        // トースト通知でホーム追加手順のアシスト
-                        showToast("ポップアップが出たら「自動追加」をタップしてください", 'task');
-                        
-                        // 擬似的にインスツルをブラウザに要求
-                        if(window.sidebar && window.sidebar.addPanel) {
-                            window.sidebar.addPanel(link.title, link.href, "");
-                        } else {
-                            // 通常のChromeリンク型ジャンプでPWAにショートカットをインストール
-                            window.location.href = targetUrl;
-                        }
-                    } else {
-                        showToast("この端末は自動ショートカット追加に対応していません", 'danger');
-                    }
-                }
-            );
-        }
-
         function checkPassword() {
             if (document.getElementById("pwInput").value === password) {
                 localStorage.setItem("isLoggedIn", "true");
@@ -499,17 +459,6 @@
             renderTimetable(); setDates(); updateClock(); highlightStatus(); refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
             checkUrlImport(); 
-            checkAndroidShortcut(); 
-        }
-
-        function checkAndroidShortcut() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const shortcutType = urlParams.get('shortcut');
-            if (shortcutType === 'today') {
-                showToast("【ウィジェット起動】今日の予定を表示中", 'task');
-            } else if (shortcutType === 'tasks') {
-                setTimeout(() => openMonthOverview('task'), 300);
-            }
         }
 
         function generateQRData() {
@@ -707,9 +656,9 @@
             document.getElementById("detailPopup").style.display = "flex";
         }
 
-        // （省略：残りの不変の関数群。PWA等を含む）
         function openMonthOverview(type) { document.getElementById("monthPopupTitle").innerText = type === 'task' ? "今後1ヶ月の課題一覧" : "今後1ヶ月のテスト一覧"; const listEl = document.getElementById("monthPopupList"); const today = new Date(); today.setHours(0,0,0,0); const filtered = (type === 'task' ? tasks : tests).filter(item => { if(!item.date) return false; const d = new Date(item.date); return d >= today && d <= new Date(today.getTime() + 30 * 86400000); }).sort((a, b) => new Date(a.date) - new Date(b.date)); listEl.innerHTML = filtered.length === 0 ? `<p style="text-align:center; color:var(--text-muted);">予定はありません。</p>` : filtered.map(item => `<div class="month-list-item" onclick="closeMonthOverview(); openDetail('${type}', ${item.id});"><div><span style="color:var(--accent); font-weight:bold; margin-right:10px;">[${item.subject}]</span>${item.title}</div><div>${getStatusLabel(item.date)}</div></div>`).join(""); document.getElementById("monthPopup").style.display = "flex"; }
         function closeMonthOverview() { document.getElementById("monthPopup").style.display = "none"; }
+        // 編集・保存・削除など
         function toggleEditMode() { const v = document.getElementById("viewMode"), e = document.getElementById("editMode"); const isView = v.style.display !== "none"; v.style.display = isView ? "none" : "block"; e.style.display = isView ? "block" : "none"; }
         function saveEdit(type, id) { const item = (type === 'task' ? tasks : tests).find(t => t.id === id); item.title = document.getElementById("editTitle").value; item.date = document.getElementById("editDate").value; item.note = document.getElementById("editNote").value; saveAll(); showToast("変更を保存しました！", type); closeDetail(); }
         function deleteItem(type, id) { showConfirmModal("項目の削除", "この予定を時間割から完全に削除しますか？\n（この操作は取り消せません）", function() { if(type === 'task') tasks = tasks.filter(t => t.id !== id); else tests = tests.filter(t => t.id !== id); saveAll(); showToast("予定を削除しました", 'danger'); closeDetail(); }); }
@@ -717,6 +666,7 @@
         function undoItem(id) { let idx = completed.findIndex(c => c.id === id); if(idx > -1) { let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); showToast("予定を未完了に戻しました", item.type); renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); } }
         function closeDetail() { document.getElementById("detailPopup").style.display = "none"; renderPopupLists(); highlightStatus(); refreshGlobalAlerts(); }
         function saveAll() { localStorage.setItem("tasks", JSON.stringify(tasks)); localStorage.setItem("tests", JSON.stringify(tests)); localStorage.setItem("completed", JSON.stringify(completed)); }
+
         function getStatusLabel(dateStr) { if (!dateStr) return '<span class="alert-label" style="background:#64748b; color:white;">未定</span>'; const today = new Date(); today.setHours(0,0,0,0); const target = new Date(dateStr); if(dateStr === today.toLocaleDateString('sv-SE')) return '<span class="alert-label label-today">今日</span>'; if(dateStr === new Date(today.getTime() + 86400000).toLocaleDateString('sv-SE')) return '<span class="alert-label label-tomorrow">明日</span>'; if(target < today) return '<span class="alert-label label-overdue">期限切れ</span>'; return `<span class="alert-label" style="background:#059669; color:white;">${dateStr.slice(5)}</span>`; }
         function highlightStatus() { const now = new Date(); const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()]; document.querySelectorAll("td:not(.period):not(.blank)").forEach(td => { td.classList.remove("today-class"); if (weekOffset === 0 && td.classList.contains(realDayClass)) { td.classList.add("today-class"); } }); }
         function refreshGlobalAlerts() { const d = new Date(); d.setHours(0,0,0,0); const limitDate = new Date(d.getTime() + 7 * 86400000); const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`; const getFiltered = (data) => data.filter(t => { if(!t.date) return false; const targetTime = new Date(t.date); return targetTime < d || (targetTime >= d && targetTime <= limitDate); }).sort((a,b) => new Date(a.date) - new Date(b.date)); document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし"; document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし"; }
