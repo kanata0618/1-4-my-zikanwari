@@ -125,7 +125,7 @@
         .deadline h3 { margin: 0 0 10px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid #334155; padding-bottom: 5px; }
         #quickMemoInput { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; padding: 8px; height: 80px; width: 100%; resize: none; box-sizing: border-box; outline: none; }
 
-        /* テーブル設定（均等6列、スクロール最適化） */
+        /* テーブル設定 */
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: 18px; }
         table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 900px; transition: transform 0.3s ease, opacity 0.3s ease; }
         .slide-left { transform: translateX(-50px); opacity: 0; }
@@ -143,7 +143,7 @@
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; cursor: default !important; border: none !important; }
 
-        /* ポップアップ共通のレスポンシブ化 */
+        /* ポップアップ */
         .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; padding: 10px; box-sizing: border-box; }
         .popup-content { background: #111827; width: 900px; max-width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 25px; padding: 40px 30px; position: relative; border: 1px solid #334155; box-sizing: border-box; }
         .close { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; color: var(--text-muted); z-index: 10; }
@@ -171,22 +171,14 @@
         .month-list-item { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .month-list-item:hover { border-color: var(--accent); background: var(--bg-hover); }
 
-        /* トースト通知用のスタイル */
-        #toastContainer {
-            position: fixed; top: 20px; right: 20px; z-index: 99999;
-            display: flex; flex-direction: column; gap: 10px; max-width: 90%;
-        }
-        .toast-notification {
-            background: #1e293b; border: 1px solid #334155; color: white;
-            padding: 12px 20px; border-radius: 12px; font-weight: bold; font-size: 14px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px;
-            transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        /* トースト通知 */
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; max-width: 90%; }
+        .toast-notification { background: #1e293b; border: 1px solid #334155; color: white; padding: 12px 20px; border-radius: 12px; font-weight: bold; font-size: 14px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-notification.show { transform: translateX(0); }
         .toast-icon { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
         .toast-danger { border-color: var(--danger); }
 
-        /* 中央確認用モーダルダイアログ */
+        /* 中央確認モーダル */
         .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 99999; padding: 15px; }
         .confirm-box { background: var(--bg-card); border: 1px solid #334155; padding: 25px; border-radius: 20px; width: 340px; max-width: 100%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         .confirm-box h3 { margin-top: 0; color: white; font-size: 18px; margin-bottom: 15px; }
@@ -285,7 +277,7 @@
                 <div class="help-section">
                     <h3>📅 課題やテストを登録する</h3>
                     <ul>
-                        <li>時間割の<b>教科のマス</b>を直接タップすると、その教科専用 of 課題やテストを追加できます。</li>
+                        <li>時間割の<b>教科のマス</b>を直接タップすると、その教科専用の課題やテストを追加できます。</li>
                     </ul>
                     <h3>🔀 先週・来週の時間割を見る</h3>
                     <ul>
@@ -467,6 +459,20 @@
             renderTimetable(); setDates(); updateClock(); highlightStatus(); refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
             checkUrlImport(); 
+            checkAndroidShortcut(); // Android用ウィジェットショートカットの起動判定
+        }
+
+        // 🚀 Android専用：ショートカットリンクから起動された時の表示切り替え
+        function checkAndroidShortcut() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shortcutType = urlParams.get('shortcut');
+            if (shortcutType === 'today') {
+                // 「今日の時間割」が押されたら、自動で現在の曜日クラスが付いているマスだけをハイライトする等に誘導できます
+                showToast("【ウィジェット起動】今日の予定を表示中", 'task');
+            } else if (shortcutType === 'tasks') {
+                // 「直近の課題」が押されたら、自動で一ヶ月課題リストをポップアップ
+                setTimeout(() => openMonthOverview('task'), 300);
+            }
         }
 
         function generateQRData() {
@@ -552,7 +558,7 @@
             } else {
                 showConfirmModal(
                     "データの同期・上書き",
-                    "読み込んだデータに置き換えますか？\n（現在の予定はすべて消えて上書きされます）",
+                    "読み込んで上書きしますか？（現在のデータは削除されます）",
                     coreLogic
                 );
             }
@@ -702,13 +708,7 @@
             const d = new Date(); d.setHours(0,0,0,0);
             const limitDate = new Date(d.getTime() + 7 * 86400000); 
             const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
-            
-            const getFiltered = (data) => data.filter(t => {
-                if(!t.date) return false;
-                const targetTime = new Date(t.date);
-                return targetTime < d || (targetTime >= d && targetTime <= limitDate);
-            }).sort((a,b) => new Date(a.date) - new Date(b.date));
-            
+            const getFiltered = (data) => data.filter(t => { if(!t.date) return false; const targetTime = new Date(t.date); return targetTime < d || (targetTime >= d && targetTime <= limitDate); }).sort((a,b) => new Date(a.date) - new Date(b.date));
             document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
             document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
         }
@@ -716,25 +716,17 @@
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
         function updateClock() { document.getElementById("todayBox").innerText = `${new Date().getMonth()+1}月 ${new Date().getDate()}日 (${["日","月","火","水","木","金","土"][new Date().getDay()]})`; }
 
-        // 新しいサービスワーカーのアップデートを自動検知して画面をリロードするコード
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('sw.js').then(function(registration) {
                     console.log('PWA ServiceWorker 登録成功:', registration.scope);
-                    
-                    // 新しいサービスワーカー（アプデ）が裏でスタンバイしているか監視
                     registration.addEventListener('updatefound', function() {
                         const newWorker = registration.installing;
                         newWorker.addEventListener('statechange', function() {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // アプデが完了したら自動で画面をリロードして全員に最新のプログラムを適用
-                                window.location.reload();
-                            }
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) { window.location.reload(); }
                         });
                     });
-                }, function(err) {
-                    console.log('PWA ServiceWorker 登録失敗:', err);
-                });
+                }, function(err) { console.log('PWA ServiceWorker 登録失敗:', err); });
             });
         }
     </script>
