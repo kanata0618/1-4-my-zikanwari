@@ -20,10 +20,70 @@
 
         body { margin: 0; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg-main); color: var(--text-main); line-height: 1.6; }
 
+        /* パスワードログイン画面のスタイル */
+        #loginContainer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-main); display: flex; justify-content: center; align-items: center;
+            z-index: 9999; transition: 0.3s;
+        }
+        .login-box {
+            background: var(--bg-card); padding: 40px; border-radius: 24px;
+            border: 1px solid #334155; width: 100%; max-width: 360px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .login-box h2 { margin-top: 0; margin-bottom: 20px; font-size: 22px; font-weight: 800; color: white; }
+        .login-input {
+            width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #334155;
+            background: #0f172a; color: white; box-sizing: border-box; font-size: 16px;
+            text-align: center; margin-bottom: 15px; outline: none; transition: 0.2s;
+        }
+        .login-input:focus { border-color: var(--accent); }
+        .login-btn {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: var(--accent); color: white; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .login-btn:hover { background: #0284c7; transform: translateY(-1px); }
+        .login-error { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; }
+
+        /* メインコンテンツ */
+        #mainContent { display: none; position: relative; padding-top: 40px; }
+
+        /* サイドメニュー */
+        .menu-btn {
+            position: absolute; top: -10px; left: 0; background: var(--bg-card);
+            border: 1px solid #334155; color: white; font-size: 20px; padding: 6px 12px;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; z-index: 100;
+        }
+        .menu-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+        
+        .sidebar {
+            position: fixed; top: 0; left: -320px; width: 300px; height: 100%;
+            background: #111827; border-right: 1px solid #334155; padding: 30px 20px;
+            box-sizing: border-box; z-index: 5000; transition: 0.3s ease; overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar h2 { margin-top: 0; font-size: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .sidebar-close { font-size: 24px; cursor: pointer; color: var(--text-muted); float: right; margin-top: -5px; }
+        .sidebar-close:hover { color: white; }
+        
+        .help-section { margin-top: 20px; font-size: 13px; color: var(--text-muted); }
+        .help-section h3 { font-size: 14px; color: white; margin-bottom: 5px; margin-top: 15px; }
+        .help-section ul { padding-left: 18px; margin: 5px 0; }
+        .help-section li { margin-bottom: 4px; }
+
         .top-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
         .date-section { min-width: 200px; }
-        #todayBox { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
-        
+        #todayBox { font-size: 28px; font-weight: 800; margin-bottom: 0; }
+
+        /* ナビゲーションボタン（表の外に移動してレイアウト崩れを防止） */
+        .th-nav-btn {
+            background: var(--bg-card); border: 1px solid #334155; color: white;
+            font-size: 14px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+            transition: 0.2s; font-weight: bold;
+        }
+        .th-nav-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+
         .link-group { display: flex; flex-direction: column; gap: 6px; }
         .ext-link { color: var(--text-muted); text-decoration: none; font-size: 13px; background: var(--bg-card); padding: 5px 12px; border-radius: 6px; border: 1px solid #334155; transition: 0.2s; width: fit-content; }
         .ext-link:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
@@ -34,19 +94,34 @@
         .deadline h3 { margin: 0 0 10px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid #334155; padding-bottom: 5px; }
         #quickMemoInput { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; padding: 8px; height: 80px; width: 100%; resize: none; box-sizing: border-box; outline: none; }
 
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 900px; }
-        th { color: var(--text-muted); padding-bottom: 10px; }
+        /* テーブル設定（ズレのない綺麗な6列構成） */
+        .table-container { overflow-x: auto; overflow-y: hidden; position: relative; }
+        table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 900px; transition: transform 0.3s ease, opacity 0.3s ease; }
+        .slide-left { transform: translateX(-50px); opacity: 0; }
+        .slide-right { transform: translateX(50px); opacity: 0; }
+        
+        th { color: var(--text-muted); padding-bottom: 10px; transition: 0.2s; vertical-align: bottom; }
         .date-label { display: block; font-size: 12px; opacity: 0.8; }
         .day-label { display: block; font-size: 18px; font-weight: bold; }
         th.today-highlight { color: var(--accent); }
+        
         .period { width: 90px; height: 90px; background: var(--bg-card); border-radius: 18px; text-align: center; vertical-align: middle; color: #94a3b8; }
         td:not(.period) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
+        
         .has-task { border: 2px dashed var(--task-border) !important; }
+        .has-test { border: 2px dashed var(--danger) !important; }
+        .has-both { 
+            border-top: 2px dashed var(--danger) !important;
+            border-left: 2px dashed var(--danger) !important;
+            border-bottom: 2px dashed var(--task-border) !important;
+            border-right: 2px dashed var(--task-border) !important;
+        }
+        
         .today-class { border: 2px solid var(--accent) !important; }
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
-        .blank { background: transparent !important; }
+        .blank { background: transparent !important; cursor: default !important; border: none !important; }
 
+        /* ポップアップ関連 */
         .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; }
         .popup-content { background: #111827; width: 900px; max-width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 25px; padding: 40px; position: relative; border: 1px solid #334155; }
         .close { position: absolute; top: 20px; right: 25px; font-size: 30px; cursor: pointer; color: var(--text-muted); }
@@ -67,53 +142,91 @@
         .alert-item { cursor: pointer; padding: 8px; border-radius: 8px; border-bottom: 1px solid #334155; margin-bottom: 4px; }
         .alert-label { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-right: 8px; }
         .label-today { background: #f43f5e; color: white; }
+        .label-tomorrow { background: #f59e0b; color: white; }
         .label-overdue { background: #000000; color: #ff4d4d; border: 1px solid #ff4d4d; animation: blink 1.5s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        
+        .month-list-item { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .month-list-item:hover { border-color: var(--accent); background: var(--bg-hover); }
     </style>
 </head>
 <body>
 
-    <div class="top-box">
-        <div class="date-section">
-            <div id="todayBox">日付を取得中...</div>
-            <div class="link-group">
-                <a href="https://www.hakodate-ct.ac.jp/" target="_blank" class="ext-link">函館工業高等専門学校</a>
-                <a href="https://www.hakodate-ct.ac.jp/~w-ryou/index.html" target="_blank" class="ext-link">春潮寮</a>
-                <a href="https://www.hakodate-ct.ac.jp/wp-content/uploads/2026/02/%E4%BB%A4%E5%92%8C%EF%BC%98%E5%B9%B4%E5%BA%A6%E5%B9%B4%E9%96%93%E8%A1%8C%E4%BA%8B%E4%BA%88%E5%AE%9A%E8%A1%A8%EF%BC%88%E5%AD%A6%E7%94%9F%E7%94%A8%EF%BC%89%E3%80%802026.01.29.pdf" target="_blank" class="ext-link">年間行事予定表</a>
-                <a href="https://syllabus.kosen-k.go.jp/Pages/PublicSubjects?school_id=01&department_id=12&year=2026&lang=ja" target="_blank" class="ext-link">シラバス</a>
-            </div>
-        </div>
-        
-        <div class="deadline-area">
-            <div class="deadline">
-                <h3>直近の課題</h3>
-                <div id="globalTaskAlert">なし</div>
-            </div>
-            <div class="deadline">
-                <h3>直近のテスト</h3>
-                <div id="globalTestAlert">なし</div>
-            </div>
-            <div class="deadline" style="cursor:default">
-                <h3>メモ</h3>
-                <textarea id="quickMemoInput" oninput="saveQuickMemo()"></textarea>
-            </div>
+    <div id="loginContainer">
+        <div class="login-box">
+            <h2>1-4 my zikanwari</h2>
+            <input type="password" id="pwInput" class="login-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') checkPassword()">
+            <button class="login-btn" onclick="checkPassword()">ログイン</button>
+            <div id="loginError" class="login-error">パスワードが違います</div>
         </div>
     </div>
 
-    <div class="table-container">
-        <table id="timetable">
-            <thead>
-                <tr id="headerRow">
-                    <th style="width: 90px;"></th>
-                    <th id="th-1"><span class="date-label" id="date-1"></span><span class="day-label">月</span></th>
-                    <th id="th-2"><span class="date-label" id="date-2"></span><span class="day-label">火</span></th>
-                    <th id="th-3"><span class="date-label" id="date-3"></span><span class="day-label">水</span></th>
-                    <th id="th-4"><span class="date-label" id="date-4"></span><span class="day-label">木</span></th>
-                    <th id="th-5"><span class="date-label" id="date-5"></span><span class="day-label">金</span></th>
-                </tr>
-            </thead>
-            <tbody id="timetableBody"></tbody>
-        </table>
+    <div id="mainContent">
+        <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+
+        <div id="sidebar" class="sidebar">
+            <span class="sidebar-close" onclick="toggleSidebar(false)">&times;</span>
+            <h2>メニュー / 使い方</h2>
+            <div class="help-section">
+                <h3>📅 予定の追加</h3>
+                <ul><li>時間割の各教科マスを押すと予定を追加できます。</li></ul>
+                <h3>🔀 週の切り替え</h3>
+                <ul><li>左上の「◀ 前週」「次週 ▶」ボタンで、週をスライド切り替えできます。</li></ul>
+                <h3>🔔 ホームの直近エリア</h3>
+                <ul><li>「今日」「明日」「期限切れ」の予定が自動で集まります。</li></ul>
+                <h3>📊 1ヶ月分の予定表示</h3>
+                <ul><li>「直近の課題/テスト」を押すと、今後30日間の予定が一覧表示されます。</li></ul>
+            </div>
+        </div>
+
+        <div class="top-box">
+            <div class="date-section">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div id="todayBox">日付を取得中...</div>
+                    <div>
+                        <button class="th-nav-btn" onclick="moveWeek(-1)">◀ 前週</button>
+                        <button class="th-nav-btn" onclick="moveWeek(1)">次週 ▶</button>
+                    </div>
+                </div>
+                <div class="link-group">
+                    <a href="https://www.hakodate-ct.ac.jp/" target="_blank" class="ext-link">函館工業高等専門学校</a>
+                    <a href="https://www.hakodate-ct.ac.jp/~w-ryou/index.html" target="_blank" class="ext-link">春潮寮</a>
+                    <a href="https://www.hakodate-ct.ac.jp/wp-content/uploads/2026/02/%E4%BB%A4%E5%92%8C%EF%BC%98%E5%B9%B4%E5%BA%A6%E5%B9%B4%E9%96%93%E8%A1%8C%E4%BA%8B%E4%BA%88%E5%AE%9A%E8%A1%A8%EF%BC%88%E5%AD%A6%E7%94%9F%E7%94%A8%EF%BC%89%E3%80%802026.01.29.pdf" target="_blank" class="ext-link">年間行事予定表</a>
+                    <a href="https://syllabus.kosen-k.go.jp/Pages/PublicSubjects?school_id=01&department_id=12&year=2026&lang=ja" target="_blank" class="ext-link">シラバス</a>
+                </div>
+            </div>
+            
+            <div class="deadline-area">
+                <div class="deadline" onclick="openMonthOverview('task')">
+                    <h3>直近の課題</h3>
+                    <div id="globalTaskAlert">なし</div>
+                </div>
+                <div class="deadline" onclick="openMonthOverview('test')">
+                    <h3>直近のテスト</h3>
+                    <div id="globalTestAlert">なし</div>
+                </div>
+                <div class="deadline" style="cursor:default">
+                    <h3>メモ</h3>
+                    <textarea id="quickMemoInput" oninput="saveQuickMemo()"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="timetable">
+                <thead>
+                    <tr id="headerRow">
+                        <th style="width: 90px;"></th>
+                        <th id="th-1"><span class="date-label" id="date-1"></span><span class="day-label">月</span></th>
+                        <th id="th-2"><span class="date-label" id="date-2"></span><span class="day-label">火</span></th>
+                        <th id="th-3"><span class="date-label" id="date-3"></span><span class="day-label">水</span></th>
+                        <th id="th-4"><span class="date-label" id="date-4"></span><span class="day-label">木</span></th>
+                        <th id="th-5"><span class="date-label" id="date-5"></span><span class="day-label">金</span></th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="popup" class="popup">
@@ -151,7 +264,33 @@
         </div>
     </div>
 
+    <div id="monthPopup" class="popup" style="z-index: 1500;">
+        <div class="popup-content" style="max-width: 600px;">
+            <span class="close" onclick="closeMonthOverview()">&times;</span>
+            <h1 id="monthPopupTitle" style="margin-top:0;">1ヶ月分の予定</h1>
+            <div id="monthPopupList" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
     <script>
+        const password = "ippei";
+        let weekOffset = 0;
+
+        function checkPassword() {
+            if (document.getElementById("pwInput").value === password) {
+                document.getElementById("loginContainer").style.display = "none";
+                document.getElementById("mainContent").style.display = "block";
+                init();
+            } else {
+                document.getElementById("loginError").style.display = "block";
+                document.getElementById("pwInput").value = "";
+            }
+        }
+
+        function toggleSidebar(open) {
+            document.getElementById("sidebar").classList.toggle("open", open);
+        }
+
         let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
         let tests = JSON.parse(localStorage.getItem("tests")) || [];
         let completed = JSON.parse(localStorage.getItem("completed")) || [];
@@ -165,38 +304,85 @@
         ];
 
         function init() {
-            setDates(); renderTimetable(); updateClock(); highlightStatus(); refreshGlobalAlerts();
+            renderTimetable(); 
+            setDates();        
+            updateClock(); 
+            highlightStatus(); 
+            refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
+        function moveWeek(direction) {
+            const table = document.getElementById("timetable");
+            table.classList.add(direction === 1 ? "slide-right" : "slide-left");
+
+            setTimeout(() => {
+                weekOffset += direction;
+                setDates();
+                highlightStatus();
+
+                table.classList.remove("slide-left", "slide-right");
+                table.classList.add(direction === 1 ? "slide-left" : "slide-right");
+                setTimeout(() => table.classList.remove("slide-left", "slide-right"), 20);
+            }, 150);
+        }
+
         function setDates() {
-            const now = new Date(); const dayNum = now.getDay(); const mondayDiff = dayNum === 0 ? -6 : 1 - dayNum;
+            const now = new Date(); 
+            const realDayNum = now.getDay(); 
+            let baseDiff = realDayNum === 6 ? 7 : (realDayNum === 0 ? 0 : 0);
+            
+            const targetDate = new Date(now.getTime() + (baseDiff + weekOffset * 7) * 86400000);
+            const mondayDiff = targetDate.getDay() === 0 ? -6 : 1 - targetDate.getDay();
+            
             for (let i = 1; i <= 5; i++) {
-                const target = new Date(now); target.setDate(now.getDate() + mondayDiff + (i - 1));
+                const target = new Date(targetDate); 
+                target.setDate(targetDate.getDate() + mondayDiff + (i - 1));
+                
                 document.getElementById(`date-${i}`).innerText = `${target.getMonth() + 1}/${target.getDate()}`;
-                if (i === dayNum) document.getElementById(`th-${i}`).classList.add('today-highlight');
+                
+                const th = document.getElementById(`th-${i}`);
+                th.classList.toggle('today-highlight', target.toDateString() === now.toDateString());
             }
         }
 
+        // 余計な処理を排除した、一番綺麗で安全な表の生成コードに戻しました
         function renderTimetable() {
-            const tbody = document.getElementById("timetableBody"); tbody.innerHTML = "";
-            const isWednesday = new Date().getDay() === 3;
+            const tbody = document.getElementById("timetableBody");
+            tbody.innerHTML = "";
+            
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
-                let timeStr = row[1];
-                if(row[0] === "4" && isWednesday) timeStr = "14:45～15:35";
-                tr.innerHTML = `<td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>`;
+                tr.innerHTML = `
+                    <td class="period">
+                        <span style="font-size:24px; font-weight:800;">${row[0]}</span><br>
+                        <span style="font-size:10px; color:#64748b;">${row[1]}</span>
+                    </td>
+                `;
                 for(let i=2; i<=6; i++) {
-                    const subject = row[i]; const td = document.createElement("td");
-                    if(subject) { td.className = ["mon", "tue", "wed", "thu", "fri"][i-2]; td.dataset.subject = subject; td.innerText = subject; td.onclick = () => openSubject(subject); }
-                    else { td.className = "blank"; }
+                    const subject = row[i]; 
+                    const td = document.createElement("td");
+                    
+                    if(subject) { 
+                        td.className = ["mon", "tue", "wed", "thu", "fri"][i-2]; 
+                        td.dataset.subject = subject; 
+                        td.innerText = subject; 
+                        td.onclick = () => openSubject(subject); 
+                    } else { 
+                        td.className = "blank"; 
+                    }
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
             });
         }
 
-        function openSubject(subject) { currentSubject = subject; document.getElementById("subjectTitle").innerText = subject; document.getElementById("popup").style.display = "flex"; renderPopupLists(); }
+        function openSubject(subject) { 
+            currentSubject = subject; 
+            document.getElementById("subjectTitle").innerText = subject; 
+            document.getElementById("popup").style.display = "flex"; 
+            renderPopupLists(); 
+        }
         function closePopup() { document.getElementById("popup").style.display = "none"; refreshGlobalAlerts(); highlightStatus(); }
 
         function addItem(type) {
@@ -204,8 +390,10 @@
             const dateInput = document.getElementById(type === 'task' ? "taskDeadline" : "testDate");
             const noteInput = document.getElementById(type === 'task' ? "taskNote" : "testNote");
             if(!titleInput.value || !dateInput.value) { alert("内容と日付を入力してください！"); return; }
+            
             const newItem = { subject: currentSubject, title: titleInput.value, date: dateInput.value, note: noteInput.value, id: Date.now(), type: type };
-            if(type === 'task') tasks.push(newItem); else tests.push(newItem);
+            (type === 'task' ? tasks : tests).push(newItem);
+            
             titleInput.value = ""; dateInput.value = ""; noteInput.value = "";
             saveAll(); renderPopupLists(); highlightStatus(); alert("追加しました！");
         }
@@ -215,6 +403,7 @@
             const cList = document.getElementById("completedList");
             list.innerHTML = "<h3>現在の予定</h3>";
             cList.innerHTML = "";
+            
             [...tasks, ...tests].filter(t => t.subject === currentSubject).forEach(item => {
                 list.innerHTML += `<div class="card ${item.type==='test'?'test-card':''}" onclick="openDetail('${item.type}', ${item.id})"><div>${getStatusLabel(item.date)}<strong>${item.title}</strong></div></div>`;
             });
@@ -224,8 +413,7 @@
         }
 
         function openDetail(type, id) {
-            const list = type === 'task' ? tasks : tests;
-            const item = list.find(t => t.id === id);
+            const item = (type === 'task' ? tasks : tests).find(t => t.id === id);
             if(!item) return;
             const view = document.getElementById("detailView");
             view.innerHTML = `
@@ -253,16 +441,38 @@
             document.getElementById("detailPopup").style.display = "flex";
         }
 
+        function openMonthOverview(type) {
+            document.getElementById("monthPopupTitle").innerText = type === 'task' ? "今後1ヶ月の課題一覧" : "今後1ヶ月のテスト一覧";
+            const listEl = document.getElementById("monthPopupList");
+            const today = new Date(); today.setHours(0,0,0,0);
+            const oneMonthLater = new Date(today.getTime() + 30 * 86400000);
+            
+            const filtered = (type === 'task' ? tasks : tests).filter(item => {
+                if(!item.date) return false;
+                const d = new Date(item.date); return d >= today && d <= oneMonthLater;
+            }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            listEl.innerHTML = filtered.length === 0 ? 
+                `<p style="text-align:center; color:var(--text-muted);">予定はありません。</p>` : 
+                filtered.map(item => `
+                    <div class="month-list-item" onclick="closeMonthOverview(); openDetail('${type}', ${item.id});">
+                        <div><span style="color:var(--accent); font-weight:bold; margin-right:10px;">[${item.subject}]</span>${item.title}</div>
+                        <div>${getStatusLabel(item.date)}</div>
+                    </div>`).join("");
+            document.getElementById("monthPopup").style.display = "flex";
+        }
+
+        function closeMonthOverview() { document.getElementById("monthPopup").style.display = "none"; }
+
         function toggleEditMode() {
-            const v = document.getElementById("viewMode");
-            const e = document.getElementById("editMode");
-            if(v.style.display === "none") { v.style.display = "block"; e.style.display = "none"; }
-            else { v.style.display = "none"; e.style.display = "block"; }
+            const v = document.getElementById("viewMode"), e = document.getElementById("editMode");
+            const isView = v.style.display !== "none";
+            v.style.display = isView ? "none" : "block";
+            e.style.display = isView ? "block" : "none";
         }
 
         function saveEdit(type, id) {
-            const list = (type === 'task' ? tasks : tests);
-            const item = list.find(t => t.id === id);
+            const item = (type === 'task' ? tasks : tests).find(t => t.id === id);
             item.title = document.getElementById("editTitle").value;
             item.date = document.getElementById("editDate").value;
             item.note = document.getElementById("editNote").value;
@@ -284,7 +494,7 @@
 
         function undoItem(id) {
             let idx = completed.findIndex(c => c.id === id);
-            if(idx > -1) { let item = completed.splice(idx, 1)[0]; if(item.type === 'task') tasks.push(item); else tests.push(item); saveAll(); renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); }
+            if(idx > -1) { let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); }
         }
 
         function closeDetail() { document.getElementById("detailPopup").style.display = "none"; renderPopupLists(); highlightStatus(); refreshGlobalAlerts(); }
@@ -295,37 +505,61 @@
             localStorage.setItem("completed", JSON.stringify(completed));
         }
 
+        // 安全対策：もし古いデータに日付が入っていなくても裏でエラーにならないようにガード
         function getStatusLabel(dateStr) {
+            if (!dateStr) return '<span class="alert-label" style="background:#64748b; color:white;">未定</span>';
             const today = new Date(); today.setHours(0,0,0,0);
+            const tomorrow = new Date(today.getTime() + 86400000);
             const target = new Date(dateStr);
+            
             if(dateStr === today.toLocaleDateString('sv-SE')) return '<span class="alert-label label-today">今日</span>';
+            if(dateStr === tomorrow.toLocaleDateString('sv-SE')) return '<span class="alert-label label-tomorrow">明日</span>';
             if(target < today) return '<span class="alert-label label-overdue">期限切れ</span>';
             return `<span class="alert-label" style="background:#059669; color:white;">${dateStr.slice(5)}</span>`;
         }
 
         function highlightStatus() {
-            const dayIdx = new Date().getDay(); const dayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][dayIdx];
-            const taskSubjects = [...new Set(tasks.map(t => t.subject))];
-            document.querySelectorAll("td:not(.period)").forEach(td => {
-                td.classList.remove("today-class", "has-task");
-                if (td.classList.contains(dayClass)) td.classList.add("today-class");
-                if (taskSubjects.includes(td.dataset.subject)) td.classList.add("has-task");
+            const now = new Date();
+            const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
+            const today = new Date(); today.setHours(0,0,0,0);
+            const oneWeekLater = new Date(today.getTime() + 7 * 86400000);
+
+            const activeTaskSubj = [...new Set(tasks.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
+            const activeTestSubj = [...new Set(tests.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
+
+            document.querySelectorAll("td:not(.period):not(.blank)").forEach(td => {
+                td.classList.remove("today-class", "has-task", "has-test", "has-both");
+                
+                if (weekOffset === 0 && td.classList.contains(realDayClass)) {
+                    td.classList.add("today-class");
+                }
+                
+                const hasTask = activeTaskSubj.includes(td.dataset.subject);
+                const hasTest = activeTestSubj.includes(td.dataset.subject);
+
+                if (hasTask && hasTest) td.classList.add("has-both");
+                else if (hasTest) td.classList.add("has-test");
+                else if (hasTask) td.classList.add("has-task");
             });
         }
 
         function refreshGlobalAlerts() {
-            const today = new Date(); today.setHours(0,0,0,0);
-            const todayStr = today.toLocaleDateString('sv-SE');
-            const format = (t, type) => `<div class="alert-item" onclick="openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
-            const getFiltered = (data) => data.filter(t => t.date === todayStr || (t.date && new Date(t.date) < today)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            const d = new Date(); d.setHours(0,0,0,0);
+            const todayStr = d.toLocaleDateString('sv-SE');
+            const tomorrowStr = new Date(d.getTime() + 86400000).toLocaleDateString('sv-SE');
+            
+            const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
+            const getFiltered = (data) => data.filter(t => t.date && (t.date === todayStr || t.date === tomorrowStr || new Date(t.date) < d)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
             document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
             document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
         }
 
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
-        function updateClock() { const now = new Date(); const week = ["日","月","火","水","木","金","土"]; document.getElementById("todayBox").innerText = `${now.getMonth()+1}月 ${now.getDate()}日 (${week[now.getDay()]})`; }
-
-        init();
+        function updateClock() { 
+            const now = new Date(); const week = ["日","月","火","水","木","金","土"]; 
+            document.getElementById("todayBox").innerText = `${now.getMonth()+1}月 ${now.getDate()}日 (${week[now.getDay()]})`; 
+        }
     </script>
 </body>
 </html>
