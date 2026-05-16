@@ -20,10 +20,70 @@
 
         body { margin: 0; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg-main); color: var(--text-main); line-height: 1.6; }
 
+        /* パスワードログイン画面のスタイル */
+        #loginContainer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-main); display: flex; justify-content: center; align-items: center;
+            z-index: 9999; transition: 0.3s;
+        }
+        .login-box {
+            background: var(--bg-card); padding: 40px; border-radius: 24px;
+            border: 1px solid #334155; width: 100%; max-width: 360px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .login-box h2 { margin-top: 0; margin-bottom: 20px; font-size: 22px; font-weight: 800; color: white; }
+        .login-input {
+            width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #334155;
+            background: #0f172a; color: white; box-sizing: border-box; font-size: 16px;
+            text-align: center; margin-bottom: 15px; outline: none; transition: 0.2s;
+        }
+        .login-input:focus { border-color: var(--accent); }
+        .login-btn {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: var(--accent); color: white; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .login-btn:hover { background: #0284c7; transform: translateY(-1px); }
+        .login-error { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; }
+
+        /* メインコンテンツ（初期状態は非表示） */
+        #mainContent { display: none; position: relative; padding-top: 40px; }
+
+        /* サイドメニューのスタイル */
+        .menu-btn {
+            position: absolute; top: -10px; left: 0; background: var(--bg-card);
+            border: 1px solid #334155; color: white; font-size: 20px; padding: 6px 12px;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; z-index: 100;
+        }
+        .menu-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+        
+        .sidebar {
+            position: fixed; top: 0; left: -320px; width: 300px; height: 100%;
+            background: #111827; border-right: 1px solid #334155; padding: 30px 20px;
+            box-sizing: border-box; z-index: 5000; transition: 0.3s ease; overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar h2 { margin-top: 0; font-size: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .sidebar-close { font-size: 24px; cursor: pointer; color: var(--text-muted); float: right; margin-top: -5px; }
+        .sidebar-close:hover { color: white; }
+        
+        .help-section { margin-top: 20px; font-size: 13px; color: var(--text-muted); }
+        .help-section h3 { font-size: 14px; color: white; margin-bottom: 5px; margin-top: 15px; }
+        .help-section ul { padding-left: 18px; margin: 5px 0; }
+        .help-section li { margin-bottom: 4px; }
+
         .top-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
         .date-section { min-width: 200px; }
         #todayBox { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
-        
+
+        /* 曜日左右の矢印ボタン用スタイル */
+        .th-nav-btn {
+            background: var(--bg-card); border: 1px solid #334155; color: white;
+            font-size: 16px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+            transition: 0.2s; vertical-align: middle; margin: 0; width: 100%; box-sizing: border-box;
+        }
+        .th-nav-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+
         .link-group { display: flex; flex-direction: column; gap: 6px; }
         .ext-link { color: var(--text-muted); text-decoration: none; font-size: 13px; background: var(--bg-card); padding: 5px 12px; border-radius: 6px; border: 1px solid #334155; transition: 0.2s; width: fit-content; }
         .ext-link:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
@@ -34,15 +94,30 @@
         .deadline h3 { margin: 0 0 10px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid #334155; padding-bottom: 5px; }
         #quickMemoInput { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; padding: 8px; height: 80px; width: 100%; resize: none; box-sizing: border-box; outline: none; }
 
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 900px; }
-        th { color: var(--text-muted); padding-bottom: 10px; }
+        /* スライドアニメーション用のコンテナ設定 */
+        .table-container { overflow-x: auto; overflow-y: hidden; position: relative; }
+        table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 950px; transition: transform 0.3s ease, opacity 0.3s ease; }
+        
+        /* スライド中のエフェクト */
+        .slide-left { transform: translateX(-50px); opacity: 0; }
+        .slide-right { transform: translateX(50px); opacity: 0; }
+        
+        th { color: var(--text-muted); padding-bottom: 10px; transition: 0.2s; vertical-align: bottom; }
         .date-label { display: block; font-size: 12px; opacity: 0.8; }
         .day-label { display: block; font-size: 18px; font-weight: bold; }
         th.today-highlight { color: var(--accent); }
         .period { width: 90px; height: 90px; background: var(--bg-card); border-radius: 18px; text-align: center; vertical-align: middle; color: #94a3b8; }
         td:not(.period) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
+        
         .has-task { border: 2px dashed var(--task-border) !important; }
+        .has-test { border: 2px dashed var(--danger) !important; }
+        .has-both { 
+            border-top: 2px dashed var(--danger) !important;
+            border-left: 2px dashed var(--danger) !important;
+            border-bottom: 2px dashed var(--task-border) !important;
+            border-right: 2px dashed var(--task-border) !important;
+        }
+        
         .today-class { border: 2px solid var(--accent) !important; }
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; }
@@ -67,53 +142,101 @@
         .alert-item { cursor: pointer; padding: 8px; border-radius: 8px; border-bottom: 1px solid #334155; margin-bottom: 4px; }
         .alert-label { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-right: 8px; }
         .label-today { background: #f43f5e; color: white; }
+        .label-tomorrow { background: #f59e0b; color: white; }
         .label-overdue { background: #000000; color: #ff4d4d; border: 1px solid #ff4d4d; animation: blink 1.5s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        
+        .month-list-item { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .month-list-item:hover { border-color: var(--accent); background: var(--bg-hover); }
     </style>
 </head>
 <body>
 
-    <div class="top-box">
-        <div class="date-section">
-            <div id="todayBox">日付を取得中...</div>
-            <div class="link-group">
-                <a href="https://www.hakodate-ct.ac.jp/" target="_blank" class="ext-link">函館工業高等専門学校</a>
-                <a href="https://www.hakodate-ct.ac.jp/~w-ryou/index.html" target="_blank" class="ext-link">春潮寮</a>
-                <a href="https://www.hakodate-ct.ac.jp/wp-content/uploads/2026/02/%E4%BB%A4%E5%92%8C%EF%BC%98%E5%B9%B4%E5%BA%A6%E5%B9%B4%E9%96%93%E8%A1%8C%E4%BA%8B%E4%BA%88%E5%AE%9A%E8%A1%A8%EF%BC%88%E5%AD%A6%E7%94%9F%E7%94%A8%EF%BC%89%E3%80%802026.01.29.pdf" target="_blank" class="ext-link">年間行事予定表</a>
-                <a href="https://syllabus.kosen-k.go.jp/Pages/PublicSubjects?school_id=01&department_id=12&year=2026&lang=ja" target="_blank" class="ext-link">シラバス</a>
-            </div>
-        </div>
-        
-        <div class="deadline-area">
-            <div class="deadline">
-                <h3>直近の課題</h3>
-                <div id="globalTaskAlert">なし</div>
-            </div>
-            <div class="deadline">
-                <h3>直近のテスト</h3>
-                <div id="globalTestAlert">なし</div>
-            </div>
-            <div class="deadline" style="cursor:default">
-                <h3>メモ</h3>
-                <textarea id="quickMemoInput" oninput="saveQuickMemo()"></textarea>
-            </div>
+    <div id="loginContainer">
+        <div class="login-box">
+            <h2>1-4 my zikanwari</h2>
+            <input type="password" id="pwInput" class="login-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') checkPassword()">
+            <button class="login-btn" onclick="checkPassword()">ログイン</button>
+            <div id="loginError" class="login-error">パスワードが違います</div>
         </div>
     </div>
 
-    <div class="table-container">
-        <table id="timetable">
-            <thead>
-                <tr id="headerRow">
-                    <th style="width: 90px;"></th>
-                    <th id="th-1"><span class="date-label" id="date-1"></span><span class="day-label">月</span></th>
-                    <th id="th-2"><span class="date-label" id="date-2"></span><span class="day-label">火</span></th>
-                    <th id="th-3"><span class="date-label" id="date-3"></span><span class="day-label">水</span></th>
-                    <th id="th-4"><span class="date-label" id="date-4"></span><span class="day-label">木</span></th>
-                    <th id="th-5"><span class="date-label" id="date-5"></span><span class="day-label">金</span></th>
-                </tr>
-            </thead>
-            <tbody id="timetableBody"></tbody>
-        </table>
+    <div id="mainContent">
+        <button class="menu-btn" onclick="toggleSidebar(true)">☰</button>
+
+        <div id="sidebar" class="sidebar">
+            <span class="sidebar-close" onclick="toggleSidebar(false)">&times;</span>
+            <h2>メニュー / 使い方</h2>
+            <div class="help-section">
+                <h3>📅 予定の追加</h3>
+                <ul>
+                    <li>時間割の各教科マスを押すと、その教科の課題やテストを追加できます。</li>
+                </ul>
+                <h3>🔀 週の切り替え</h3>
+                <ul>
+                    <li>時間割の左端にある「◀」と、右端にある「▶」ボタンで、前の週や次の週の日付へスライド切り替えできます。</li>
+                </ul>
+                <h3>🔔 ホームの直近エリア</h3>
+                <ul>
+                    <li>「期限切れ」「今日」「明日」の予定が自動でここに集まります。クリックで直接詳細を開けます。</li>
+                </ul>
+                <h3>📊 1ヶ月分の予定表示</h3>
+                <ul>
+                    <li>ホーム右上の「直近の課題」または「直近のテスト」のカードを押すと、今後30日間の予定が一覧で大きくポップアップ表示されます。</li>
+                </ul>
+                <h3>🎨 時間割の枠線ルール</h3>
+                <ul>
+                    <li><span style="color:var(--task-border);">■</span> <b>オレンジ点線</b>：1週間以内に課題あり</li>
+                    <li><span style="color:var(--danger);">■</span> <b>赤点線</b>：1週間以内にテストあり</li>
+                    <li><span style="color:white; border:1px dashed #334155; padding:0 3px;">■</span> <b>2色点線</b>：課題とテストが両方被り</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="top-box">
+            <div class="date-section">
+                <div id="todayBox">日付を取得中...</div>
+                <div class="link-group">
+                    <a href="https://www.hakodate-ct.ac.jp/" target="_blank" class="ext-link">函館工業高等専門学校</a>
+                    <a href="https://www.hakodate-ct.ac.jp/~w-ryou/index.html" target="_blank" class="ext-link">春潮寮</a>
+                    <a href="https://www.hakodate-ct.ac.jp/wp-content/uploads/2026/02/%E4%BB%A4%E5%92%8C%EF%BC%98%E5%B9%B4%E5%BA%A6%E5%B9%B4%E9%96%93%E8%A1%8C%E4%BA%8B%E4%BA%88%E5%AE%9A%E8%A1%A8%EF%BC%88%E5%AD%A6%E7%94%9F%E7%94%A8%EF%BC%89%E3%80%802026.01.29.pdf" target="_blank" class="ext-link">年間行事予定表</a>
+                    <a href="https://syllabus.kosen-k.go.jp/Pages/PublicSubjects?school_id=01&department_id=12&year=2026&lang=ja" target="_blank" class="ext-link">シラバス</a>
+                </div>
+            </div>
+            
+            <div class="deadline-area">
+                <div class="deadline" onclick="openMonthOverview('task')">
+                    <h3>直近の課題</h3>
+                    <div id="globalTaskAlert">なし</div>
+                </div>
+                <div class="deadline" onclick="openMonthOverview('test')">
+                    <h3>直近のテスト</h3>
+                    <div id="globalTestAlert">なし</div>
+                </div>
+                <div class="deadline" style="cursor:default">
+                    <h3>メモ</h3>
+                    <textarea id="quickMemoInput" oninput="saveQuickMemo()"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="timetable">
+                <thead>
+                    <tr id="headerRow">
+                        <th style="width: 50px; text-align: center;"><button class="th-nav-btn" onclick="moveWeek(-1)">◀</button></th>
+                        <th style="width: 90px;"></th>
+                        <th id="th-1"><span class="date-label" id="date-1"></span><span class="day-label">月</span></th>
+                        <th id="th-2"><span class="date-label" id="date-2"></span><span class="day-label">火</span></th>
+                        <th id="th-3"><span class="date-label" id="date-3"></span><span class="day-label">水</span></th>
+                        <th id="th-4"><span class="date-label" id="date-4"></span><span class="day-label">木</span></th>
+                        <th id="th-5"><span class="date-label" id="date-5"></span><span class="day-label">金</span></th>
+                        <th style="width: 50px; text-align: center;"><button class="th-nav-btn" onclick="moveWeek(1)">▶</button></th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="popup" class="popup">
@@ -151,7 +274,38 @@
         </div>
     </div>
 
+    <div id="monthPopup" class="popup" style="z-index: 1500;">
+        <div class="popup-content" style="max-width: 600px;">
+            <span class="close" onclick="closeMonthOverview()">&times;</span>
+            <h1 id="monthPopupTitle" style="margin-top:0;">1ヶ月分の予定</h1>
+            <div id="monthPopupList" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
     <script>
+        const password = "ippei";
+        let weekOffset = 0;
+
+        function checkPassword() {
+            const inputVal = document.getElementById("pwInput").value;
+            const errorEl = document.getElementById("loginError");
+            
+            if (inputVal === password) {
+                document.getElementById("loginContainer").style.display = "none";
+                document.getElementById("mainContent").style.display = "block";
+                init();
+            } else {
+                errorEl.style.display = "block";
+                document.getElementById("pwInput").value = "";
+            }
+        }
+
+        function toggleSidebar(open) {
+            const sidebar = document.getElementById("sidebar");
+            if(open) sidebar.classList.add("open");
+            else sidebar.classList.remove("open");
+        }
+
         let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
         let tests = JSON.parse(localStorage.getItem("tests")) || [];
         let completed = JSON.parse(localStorage.getItem("completed")) || [];
@@ -169,29 +323,87 @@
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
+        // 矢印切り替えアニメーション制御（アニメーション方向を反対に修正）
+        function moveWeek(direction) {
+            const table = document.getElementById("timetable");
+            if (!table) return;
+
+            // 1. スライドアウト（元の週を画面外へ）
+            // direction === 1 (次週) の時は右へ (slide-right)、
+            // direction === -1 (前週) の時は左へ (slide-left) スライドアウトさせる。
+            table.classList.add(direction === 1 ? "slide-right" : "slide-left");
+
+            setTimeout(() => {
+                // 2. データ更新
+                weekOffset += direction;
+                setDates();
+                highlightStatus();
+
+                // 3. スライドインの準備（新しい週を反対側から滑り込ませる）
+                table.classList.remove("slide-left", "slide-right");
+                // 新しい週を direction === 1 (次週) なら左 (slide-left) の位置に、
+                // direction === -1 (前週) なら右 (slide-right) の位置に配置する。
+                table.classList.add(direction === 1 ? "slide-left" : "slide-right");
+
+                // 4. スライドイン実行（ブラウザの再描画を挟んでクラスを削除）
+                setTimeout(() => {
+                    table.classList.remove("slide-left", "slide-right");
+                }, 20);
+
+            }, 150); // フェードアウトの時間
+        }
+
         function setDates() {
-            const now = new Date(); const dayNum = now.getDay(); const mondayDiff = dayNum === 0 ? -6 : 1 - dayNum;
+            const now = new Date(); 
+            const realDayNum = now.getDay(); 
+            
+            let baseDiff = 0;
+            if (realDayNum === 6) baseDiff = 7; 
+            if (realDayNum === 0) baseDiff = 0; 
+            
+            const totalOffsetDays = baseDiff + (weekOffset * 7);
+            const targetDate = new Date(now.getTime() + totalOffsetDays * 24 * 60 * 60 * 1000);
+            const dayNum = targetDate.getDay(); 
+            const mondayDiff = dayNum === 0 ? -6 : 1 - dayNum;
+            
             for (let i = 1; i <= 5; i++) {
-                const target = new Date(now); target.setDate(now.getDate() + mondayDiff + (i - 1));
-                document.getElementById(`date-${i}`).innerText = `${target.getMonth() + 1}/${target.getDate()}`;
-                if (i === dayNum) document.getElementById(`th-${i}`).classList.add('today-highlight');
+                const target = new Date(targetDate); 
+                target.setDate(targetDate.getDate() + mondayDiff + (i - 1));
+                
+                const el = document.getElementById(`date-${i}`);
+                if(el) el.innerText = `${target.getMonth() + 1}/${target.getDate()}`;
+                
+                const th = document.getElementById(`th-${i}`);
+                if (th) {
+                    th.classList.remove('today-highlight');
+                    if (target.toDateString() === now.toDateString()) {
+                        th.classList.add('today-highlight');
+                    }
+                }
             }
         }
 
         function renderTimetable() {
-            const tbody = document.getElementById("timetableBody"); tbody.innerHTML = "";
+            const tbody = document.getElementById("timetableBody"); if(!tbody) return;
+            tbody.innerHTML = "";
             const isWednesday = new Date().getDay() === 3;
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
                 let timeStr = row[1];
                 if(row[0] === "4" && isWednesday) timeStr = "14:45～15:35";
-                tr.innerHTML = `<td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>`;
+                
+                // 行のセル数もヘッダーと同じ全7列に完全同期
+                tr.innerHTML = `
+                    <td style="background:transparent; pointer-events:none;"></td>
+                    <td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>
+                `;
                 for(let i=2; i<=6; i++) {
                     const subject = row[i]; const td = document.createElement("td");
                     if(subject) { td.className = ["mon", "tue", "wed", "thu", "fri"][i-2]; td.dataset.subject = subject; td.innerText = subject; td.onclick = () => openSubject(subject); }
                     else { td.className = "blank"; }
                     tr.appendChild(td);
                 }
+                tr.innerHTML += `<td style="background:transparent; pointer-events:none;"></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -253,6 +465,38 @@
             document.getElementById("detailPopup").style.display = "flex";
         }
 
+        function openMonthOverview(type) {
+            const titleEl = document.getElementById("monthPopupTitle");
+            const listEl = document.getElementById("monthPopupList");
+            titleEl.innerText = type === 'task' ? "今後1ヶ月の課題一覧" : "今後1ヶ月のテスト一覧";
+            
+            const today = new Date(); today.setHours(0,0,0,0);
+            const oneMonthLater = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+            const dataSource = type === 'task' ? tasks : tests;
+            
+            const filtered = dataSource.filter(item => {
+                const d = new Date(item.date);
+                return d >= today && d <= oneMonthLater;
+            }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if(filtered.length === 0) {
+                listEl.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 20px;">今後1ヶ月間の予定はありません。</p>`;
+            } else {
+                listEl.innerHTML = filtered.map(item => `
+                    <div class="month-list-item" onclick="closeMonthOverview(); openDetail('${type}', ${item.id});">
+                        <div>
+                            <span style="color:var(--accent); font-weight:bold; margin-right:10px;">[${item.subject}]</span>
+                            <span>${item.title}</span>
+                        </div>
+                        <div>${getStatusLabel(item.date)}</div>
+                    </div>
+                `).join("");
+            }
+            document.getElementById("monthPopup").style.display = "flex";
+        }
+
+        function closeMonthOverview() { document.getElementById("monthPopup").style.display = "none"; }
+
         function toggleEditMode() {
             const v = document.getElementById("viewMode");
             const e = document.getElementById("editMode");
@@ -297,35 +541,73 @@
 
         function getStatusLabel(dateStr) {
             const today = new Date(); today.setHours(0,0,0,0);
+            const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
             const target = new Date(dateStr);
+            
             if(dateStr === today.toLocaleDateString('sv-SE')) return '<span class="alert-label label-today">今日</span>';
+            if(dateStr === tomorrow.toLocaleDateString('sv-SE')) return '<span class="alert-label label-tomorrow">明日</span>';
             if(target < today) return '<span class="alert-label label-overdue">期限切れ</span>';
             return `<span class="alert-label" style="background:#059669; color:white;">${dateStr.slice(5)}</span>`;
         }
 
         function highlightStatus() {
-            const dayIdx = new Date().getDay(); const dayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][dayIdx];
-            const taskSubjects = [...new Set(tasks.map(t => t.subject))];
+            const now = new Date();
+            const realDayIdx = now.getDay();
+            const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][realDayIdx];
+            
+            const today = new Date(); today.setHours(0,0,0,0);
+            const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            const activeTaskSubjects = [...new Set(tasks.filter(t => {
+                const d = new Date(t.date); return d >= today && d <= oneWeekLater;
+            }).map(t => t.subject))];
+            
+            const activeTestSubjects = [...new Set(tests.filter(t => {
+                const d = new Date(t.date); return d >= today && d <= oneWeekLater;
+            }).map(t => t.subject))];
+
             document.querySelectorAll("td:not(.period)").forEach(td => {
-                td.classList.remove("today-class", "has-task");
-                if (td.classList.contains(dayClass)) td.classList.add("today-class");
-                if (taskSubjects.includes(td.dataset.subject)) td.classList.add("has-task");
+                td.classList.remove("today-class", "has-task", "has-test", "has-both");
+                
+                if (weekOffset === 0) {
+                    if (realDayIdx !== 0 && realDayIdx !== 6) {
+                        if (td.classList.contains(realDayClass)) td.classList.add("today-class");
+                    }
+                }
+                
+                const hasTask = activeTaskSubjects.includes(td.dataset.subject);
+                const hasTest = activeTestSubjects.includes(td.dataset.subject);
+
+                if (hasTask && hasTest) {
+                    td.classList.add("has-both");
+                } else if (hasTest) {
+                    td.classList.add("has-test");
+                } else if (hasTask) {
+                    td.classList.add("has-task");
+                }
             });
         }
 
         function refreshGlobalAlerts() {
-            const today = new Date(); today.setHours(0,0,0,0);
-            const todayStr = today.toLocaleDateString('sv-SE');
-            const format = (t, type) => `<div class="alert-item" onclick="openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
-            const getFiltered = (data) => data.filter(t => t.date === todayStr || (t.date && new Date(t.date) < today)).sort((a,b) => new Date(a.date) - new Date(b.date));
-            document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
-            document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
+            const Math_today = new Date(); Math_today.setHours(0,0,0,0);
+            const todayStr = Math_today.toLocaleDateString('sv-SE');
+            const tomorrowStr = new Date(Math_today.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE');
+            
+            const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
+            const getFiltered = (data) => data.filter(t => t.date === todayStr || t.date === tomorrowStr || (t.date && new Date(t.date) < Math_today)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            const taskEl = document.getElementById("globalTaskAlert");
+            if(taskEl) taskEl.innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
+            const testEl = document.getElementById("globalTestAlert");
+            if(testEl) testEl.innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
         }
 
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
-        function updateClock() { const now = new Date(); const week = ["日","月","火","水","木","金","土"]; document.getElementById("todayBox").innerText = `${now.getMonth()+1}月 ${now.getDate()}日 (${week[now.getDay()]})`; }
-
-        init();
+        function updateClock() { 
+            const now = new Date(); const week = ["日","月","火","水","木","金","土"]; 
+            const el = document.getElementById("todayBox");
+            if(el) el.innerText = `${now.getMonth()+1}月 ${now.getDate()}日 (${week[now.getDay()]})`; 
+        }
     </script>
 </body>
 </html>
