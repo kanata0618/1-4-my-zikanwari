@@ -84,16 +84,6 @@
         }
         .th-nav-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
 
-        .link-group { display: flex; flex-direction: column; gap: 6px; }
-        .ext-link { color: var(--text-muted); text-decoration: none; font-size: 13px; background: var(--bg-card); padding: 5px 12px; border-radius: 6px; border: 1px solid #334155; transition: 0.2s; width: fit-content; }
-        .ext-link:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
-
-        .deadline-area { display: flex; gap: 15px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
-        .deadline { background: var(--bg-card); padding: 15px; border-radius: 15px; width: 260px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; }
-        .deadline:hover { border-color: var(--accent); background: var(--bg-hover); }
-        .deadline h3 { margin: 0 0 10px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid #334155; padding-bottom: 5px; }
-        #quickMemoInput { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; padding: 8px; height: 80px; width: 100%; resize: none; box-sizing: border-box; outline: none; }
-
         /* スライドアニメーション用のコンテナ設定 */
         .table-container { overflow-x: auto; overflow-y: hidden; position: relative; }
         table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 950px; transition: transform 0.3s ease, opacity 0.3s ease; }
@@ -149,6 +139,10 @@
         
         .month-list-item { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .month-list-item:hover { border-color: var(--accent); background: var(--bg-hover); }
+
+        .link-group { display: flex; flex-direction: column; gap: 6px; }
+        .ext-link { color: var(--text-muted); text-decoration: none; font-size: 13px; background: var(--bg-card); padding: 5px 12px; border-radius: 6px; border: 1px solid #334155; transition: 0.2s; width: fit-content; }
+        .ext-link:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -320,8 +314,8 @@
         ];
 
         function init() {
-            renderTimetable(); // 1. まず100%確実に時間割のマスを組み立てる
-            setDates();        // 2. その後に日付を安全に取得して反映する
+            renderTimetable(); 
+            setDates();        
             updateClock(); 
             highlightStatus(); 
             refreshGlobalAlerts();
@@ -383,9 +377,10 @@
             const tbody = document.getElementById("timetableBody"); if(!tbody) return;
             tbody.innerHTML = "";
             
-            // クラッシュ対策：土日に開いても水曜日の特殊判定で絶対に止まらないように保護
-            const currentDay = new Date().getDay();
-            const isWednesday = (currentDay === 3);
+            // クラッシュ原因の完全除去：今日が土曜（6）や日曜（0）の時は、仮で月曜日（1）扱いにして安全に文字列を生成する
+            let checkDay = new Date().getDay();
+            if (checkDay === 0 || checkDay === 6) checkDay = 1;
+            const isWednesday = (checkDay === 3);
 
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
@@ -568,6 +563,7 @@
             document.querySelectorAll("td:not(.period):not(.nav-blank)").forEach(td => {
                 td.classList.remove("today-class", "has-task", "has-test", "has-both");
                 
+                // クラッシュ原因の完全修正：土日（0, 6）の時は「今日の青枠線（today-class）」をつける処理自体を安全にスルーさせる
                 if (weekOffset === 0) {
                     if (realDayIdx !== 0 && realDayIdx !== 6) {
                         if (td.classList.contains(realDayClass)) td.classList.add("today-class");
