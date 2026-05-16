@@ -139,14 +139,7 @@
         .period { width: 90px; height: 90px; background: var(--bg-card); border-radius: 18px; text-align: center; vertical-align: middle; color: #94a3b8; }
         td:not(.period) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
         
-        .has-task { border: 2px dashed var(--task-border) !important; }
-        .has-test { border: 2px dashed var(--danger) !important; }
-        .has-both { 
-            border-top: 2px dashed var(--danger) !important;
-            border-left: 2px dashed var(--danger) !important;
-            border-bottom: 2px dashed var(--task-border) !important;
-            border-right: 2px dashed var(--task-border) !important;
-        }
+        /* 課題・テスト時の枠線装飾クラスを削除 */
         
         .today-class { border: 2px solid var(--accent) !important; }
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
@@ -231,7 +224,7 @@
     <div id="customConfirmModal" class="confirm-modal">
         <div class="confirm-box">
             <h3 id="modalTitle">確認</h3>
-            <p id="modalMessage">本当に実行しますか？</p>
+            <p id="modalMessage">本当に実行しますか?</p>
             <div class="confirm-btn-group">
                 <button id="modalCancelBtn" class="modal-btn btn-cancel">キャンセル</button>
                 <button id="modalOkBtn" class="modal-btn btn-ok">OK</button>
@@ -303,7 +296,7 @@
                     </ul>
                     <h3>🔔 提出期限のちかい予定</h3>
                     <ul>
-                        <li>ホーム画面の右上に<b>「期限切れ」「今日締め切り」「明日締め切り」</b>の予定が自動でまとめて表示されます。ここをタップすれば、直接内容を確認・提出できます。</li>
+                        <li>ホーム画面の右上に<b>「期限切れ」「今日締め切り」「明日締め切り」「1週間以内」</b>の予定が自動でまとめて表示されます。ここをタップすれば、直接内容を確認・提出できます。</li>
                     </ul>
                     <h3>📊 1ヶ月分の予定をまとめて見る</h3>
                     <ul>
@@ -312,9 +305,6 @@
                     <h3>🎨 ひと目でわかるマスの枠線ルール</h3>
                     <ul>
                         <li><span style="color:var(--accent);">■</span> <b>青い実線</b>：今日の時間割です。</li>
-                        <li><span style="color:var(--task-border);">■</span> <b>オレンジ点線</b>：1週間以内に提出する課題があります。</li>
-                        <li><span style="color:var(--danger);">■</span> <b>赤い点線</b>：1週間以内にテストがあります。</li>
-                        <li><span style="color:white; border:1px dashed #334155; padding:0 3px;">■</span> <b>2色の点線</b>：同じ週に課題もテストも重なっています。</li>
                     </ul>
                     <h3>📝 自由なメモ書き</h3>
                     <ul>
@@ -378,7 +368,16 @@
         <div class="popup-content">
             <span class="close" onclick="closePopup()">&times;</span>
             <h1 id="subjectTitle">教科名</h1>
-            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:30px;">
+            
+            <div id="activeList" style="margin-bottom: 25px;"></div>
+            <div class="completed-section" style="margin-top: 20px; margin-bottom: 30px; border-top: none; padding-top: 0;">
+                <h3>提出済み</h3>
+                <div id="completedList"></div>
+            </div>
+
+            <hr style="border-color:#334155; margin-bottom:25px;">
+
+            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:10px;">
                 <div class="input-box">
                     <h3>課題追加</h3>
                     <input type="text" id="taskTitle" placeholder="課題内容">
@@ -393,11 +392,6 @@
                     <textarea id="testNote" placeholder="メモ"></textarea>
                     <button class="add-btn" onclick="addItem('test')" style="background:var(--warning); color:white;">テストを追加</button>
                 </div>
-            </div>
-            <div id="activeList"></div>
-            <div class="completed-section">
-                <h3>提出済み</h3>
-                <div id="completedList"></div>
             </div>
         </div>
     </div>
@@ -422,22 +416,18 @@
         let weekOffset = 0;
         let lastGeneratedUrl = ""; 
 
-        // 🚀【重要変更】アプリ起動時の自動ログイン判定
+        // アプリ起動時の自動ログイン判定
         window.addEventListener('DOMContentLoaded', function() {
-            // すでにログインフラグ（isLoggedIn）がブラウザに保存されているかチェック
             if (localStorage.getItem("isLoggedIn") === "true") {
                 document.getElementById("loginContainer").style.display = "none";
                 document.getElementById("mainContent").style.display = "block";
                 init();
             }
-            // 保存されていなければ、何もしない（パスワード画面のまま待機）
         });
 
         function checkPassword() {
             if (document.getElementById("pwInput").value === password) {
-                // ログイン成功時にブラウザの永続保存フラグをオンにする
                 localStorage.setItem("isLoggedIn", "true");
-                
                 document.getElementById("loginContainer").style.display = "none";
                 document.getElementById("mainContent").style.display = "block";
                 init();
@@ -605,7 +595,9 @@
         }
 
         function setDates() {
-            const now = new Date(); const realDayNum = now.getDay(); let baseDiff = realDayNum === 6 ? 7 : 0;
+            const now = new Date(); const realDayNum = now.getDay(); 
+            // 【変更箇所】土曜日(6)または日曜日(0)になったら次の週を表示する設定
+            let baseDiff = (realDayNum === 6 || realDayNum === 0) ? (realDayNum === 6 ? 2 : 1) : 0;
             const targetDate = new Date(now.getTime() + (baseDiff + weekOffset * 7) * 86400000);
             const mondayDiff = targetDate.getDay() === 0 ? -6 : 1 - targetDate.getDay();
             for (let i = 1; i <= 5; i++) {
@@ -617,8 +609,6 @@
 
         function renderTimetable() {
             const tbody = document.getElementById("timetableBody"); tbody.innerHTML = "";
-            let checkDay = new Date().getDay(); if (checkDay === 0 || checkDay === 6) checkDay = 1;
-            const isWednesday = (checkDay === 3);
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `<td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${row[1]}</span></td>`;
@@ -635,7 +625,6 @@
         function openSubject(subject) { currentSubject = subject; document.getElementById("subjectTitle").innerText = subject; document.getElementById("popup").style.display = "flex"; renderPopupLists(); }
         function closePopup() { document.getElementById("popup").style.display = "none"; refreshGlobalAlerts(); highlightStatus(); }
 
-        // （以下、変更のない通常関数群）
         function addItem(type) {
             const titleInput = document.getElementById(type === 'task' ? "taskTitle" : "testTitle");
             const dateInput = document.getElementById(type === 'task' ? "taskDeadline" : "testDate");
@@ -706,21 +695,27 @@
 
         function highlightStatus() {
             const now = new Date(); const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
-            const today = new Date(); today.setHours(0,0,0,0); const oneWeekLater = new Date(today.getTime() + 7 * 86400000);
-            const activeTaskSubj = [...new Set(tasks.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
-            const activeTestSubj = [...new Set(tests.filter(t => t.date && new Date(t.date) >= today && new Date(t.date) <= oneWeekLater).map(t => t.subject))];
             document.querySelectorAll("td:not(.period):not(.blank)").forEach(td => {
-                td.classList.remove("today-class", "has-task", "has-test", "has-both");
+                td.classList.remove("today-class");
+                // 【変更箇所】課題・テストの枠線クラス付与ロジックをすべて削除
                 if (weekOffset === 0 && td.classList.contains(realDayClass)) { td.classList.add("today-class"); }
-                const hasTask = activeTaskSubj.includes(td.dataset.subject); const hasTest = activeTestSubj.includes(td.dataset.subject);
-                if (hasTask && hasTest) td.classList.add("has-both"); else if (hasTest) td.classList.add("has-test"); else if (hasTask) td.classList.add("has-task");
             });
         }
 
         function refreshGlobalAlerts() {
-            const d = new Date(); d.setHours(0,0,0,0); const todayStr = d.toLocaleDateString('sv-SE'); const tomorrowStr = new Date(d.getTime() + 86400000).toLocaleDateString('sv-SE');
+            const d = new Date(); d.setHours(0,0,0,0);
+            // 【変更箇所】期限が1週間前（今日から7日後まで）のアイテムもホームに載せるよう変更
+            const limitDate = new Date(d.getTime() + 7 * 86400000); 
+            
             const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
-            const getFiltered = (data) => data.filter(t => t.date && (t.date === todayStr || t.date === tomorrowStr || new Date(t.date) < d)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            const getFiltered = (data) => data.filter(t => {
+                if(!t.date) return false;
+                const targetTime = new Date(t.date);
+                // 期限切れ、もしくは今日から7日後までの予定を対象にする
+                return targetTime < d || (targetTime >= d && targetTime <= limitDate);
+            }).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
             document.getElementById("globalTaskAlert").innerHTML = getFiltered(tasks).map(t => format(t, 'task')).join("") || "なし";
             document.getElementById("globalTestAlert").innerHTML = getFiltered(tests).map(t => format(t, 'test')).join("") || "なし";
         }
