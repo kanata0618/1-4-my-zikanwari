@@ -121,7 +121,7 @@
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; cursor: default !important; border: none !important; }
 
-        /* ポップアップ */
+        /* ポップアップ共通 */
         .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; }
         .popup-content { background: #111827; width: 900px; max-width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 25px; padding: 40px; position: relative; border: 1px solid #334155; }
         .close { position: absolute; top: 20px; right: 25px; font-size: 30px; cursor: pointer; color: var(--text-muted); }
@@ -163,11 +163,34 @@
         .toast-notification.show { transform: translateX(0); }
         .toast-icon { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .toast-danger { border-color: var(--danger); }
+
+        /* 新規：画面真ん中に出るカスタムダイアログ用スタイル */
+        .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 99999; }
+        .confirm-box { background: var(--bg-card); border: 1px solid #334155; padding: 30px; border-radius: 20px; width: 340px; max-width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .confirm-box h3 { margin-top: 0; color: white; font-size: 18px; margin-bottom: 15px; }
+        .confirm-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
+        .confirm-btn-group { display: flex; gap: 12px; justify-content: center; }
+        .modal-btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; flex: 1; transition: 0.2s; }
+        .btn-cancel { background: #475569; color: white; }
+        .btn-cancel:hover { background: #334155; }
+        .btn-ok { background: var(--danger); color: white; }
+        .btn-ok:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
 
     <div id="toastContainer"></div>
+
+    <div id="customConfirmModal" class="confirm-modal">
+        <div class="confirm-box">
+            <h3 id="modalTitle">確認</h3>
+            <p id="modalMessage">本当に実行しますか？</p>
+            <div class="confirm-btn-group">
+                <button id="modalCancelBtn" class="modal-btn btn-cancel">キャンセル</button>
+                <button id="modalOkBtn" class="modal-btn btn-ok">OK</button>
+            </div>
+        </div>
+    </div>
 
     <div id="loginContainer">
         <div class="login-box">
@@ -186,25 +209,15 @@
             <h2>システム機能一覧</h2>
             <div class="help-section">
                 <h3>🔒 画面内セキュアログイン</h3>
-                <ul>
-                    <li>アプリ起動時にパスワード入力を求めるセキュリティ画面が立ち上がります。エンターキーでのログインにも対応。</li>
-                </ul>
+                <ul><li>アプリ起動時にパスワード入力を求めるセキュリティ画面が立ち上がります。エンターキーでのログインにも対応。</li></ul>
                 <h3>📅 スケジュール追加・編集</h3>
-                <ul>
-                    <li>教科マスをクリックして「課題」または「テスト」を分別登録。メモ書きの追加、あとからの編集、削除、提出トグル処理が自由に行えます。</li>
-                </ul>
+                <ul><li>教科マスをクリックして「課題」または「テスト」を分別登録。メモ書きの追加、あとからの編集、削除、提出トグル処理が自由に行えます。</li></ul>
                 <h3>🔀 週またぎ・カレンダー連動</h3>
-                <ul>
-                    <li>左上の「◀ 前週」「次週 ▶」ボタンで、過去や未来の週へ自由に行き来可能。土曜日になると、自動で次週の時間割スケジュールに自動ジャンプします。</li>
-                </ul>
-                <h3>🔔 スマート直近アラート</h3>
-                <ul>
-                    <li>ホーム右上に「期限切れ」「今日締め切り」に加え、新たに「明日締め切り」のタスクも自動収集してリスト表示します。</li>
-                </ul>
+                <ul><li>左上の「◀ 前週」「次週 ▶」ボタンで、過去や未来の週へ自由に行き来可能。土曜日になると、自動で次週の時間割スケジュールに自動ジャンプします。</li></ul>
+                <h3>🔔 ホームの直近アラート</h3>
+                <ul><li>ホーム右上に「期限切れ」「今日締め切り」に加え、新たに「明日締め切り」のタスクも自動収集してリスト表示します。</li></ul>
                 <h3>📊 30日間予定オーバービュー</h3>
-                <ul>
-                    <li>直近の課題・テストエリアのカードをタップすると、今後1ヶ月間の全スケジュールを日付順にソートした大型ポップアップ画面が開きます。</li>
-                </ul>
+                <ul><li>直近の課題/テストエリアのカードをタップすると、今後1ヶ月間の全スケジュールを日付順にソートした大型ポップアップ画面が開きます。</li></ul>
                 <h3>🎨 優先度別・マルチカラー枠線</h3>
                 <ul>
                     <li><span style="color:var(--accent);">■</span> <b>青実線</b>：当日の曜日ライン（平日のみ）</li>
@@ -213,13 +226,9 @@
                     <li><span style="color:white; border:1px dashed #334155; padding:0 3px;">■</span> <b>2色混ざり点線</b>：課題とテストが同じ週に重複</li>
                 </ul>
                 <h3>💬 インラインスマート通知</h3>
-                <ul>
-                    <li>ブラウザのポップアップを完全撤廃。追加、保存、削除、提出、およびエラー警告のすべてが、右上にトースト形式で美しく自動通知されます。</li>
-                </ul>
+                <ul><li>ブラウザのポップアップを完全撤廃。追加、保存、削除、提出、およびエラー警告のすべてが、右上のトーストまたは中央ダイアログで美しく自動完結します。</li></ul>
                 <h3>📝 クイックローカルメモ</h3>
-                <ul>
-                    <li>ホームのメモエリアは一文字打つごとに自動保存され、ブラウザを閉じても次回起動時にそのまま残ります。</li>
-                </ul>
+                <ul><li>ホームのメモエリアは一文字打つごとに自動保存され、ブラウザを閉じても次回起動時にそのまま残ります。</li></ul>
             </div>
         </div>
 
@@ -326,7 +335,6 @@
                 document.getElementById("mainContent").style.display = "block";
                 init();
             } else {
-                // パスワード誤入力エラーもトースト通知に一本化
                 showToast("パスワードが違います", 'danger');
                 document.getElementById("pwInput").value = "";
             }
@@ -357,7 +365,7 @@
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
-        // トースト通知マネージャーシステム
+        // 画面内トースト通知
         function showToast(message, type) {
             const container = document.getElementById("toastContainer");
             const toast = document.createElement("div");
@@ -378,6 +386,32 @@
                 toast.classList.remove("show");
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // 新規：画面内中央の確認ダイアログ制御システム
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById("customConfirmModal");
+            document.getElementById("modalTitle").innerText = title;
+            document.getElementById("modalMessage").innerText = message;
+            
+            modal.style.display = "flex";
+            
+            const btnOk = document.getElementById("customConfirmModal").querySelector("#modalOkBtn");
+            const btnCancel = document.getElementById("customConfirmModal").querySelector("#modalCancelBtn");
+            
+            // 古いイベントリスナーの解除対策としてクローンを作成して上書き
+            const newBtnOk = btnOk.cloneNode(true);
+            const newBtnCancel = btnCancel.cloneNode(true);
+            btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+            btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+            
+            newBtnOk.onclick = () => {
+                modal.style.display = "none";
+                onConfirm();
+            };
+            newBtnCancel.onclick = () => {
+                modal.style.display = "none";
+            };
         }
 
         function moveWeek(direction) {
@@ -461,7 +495,6 @@
             const dateInput = document.getElementById(type === 'task' ? "taskDeadline" : "testDate");
             const noteInput = document.getElementById(type === 'task' ? "taskNote" : "testNote");
             
-            // 未入力アラートもブラウザ標準を廃止してトースト警告に統一
             if(!titleInput.value || !dateInput.value) { 
                 showToast("内容と日付を入力してください！", 'warning'); 
                 return; 
@@ -558,11 +591,19 @@
             saveAll(); showToast("変更を保存しました！", type); closeDetail();
         }
 
+        // 修正箇所：ブラウザのconfirmを完全撤廃し、画面内自作ダイアログ（モーダル）に差し替え
         function deleteItem(type, id) {
-            if(confirm("削除しますか？")) {
-                if(type === 'task') tasks = tasks.filter(t => t.id !== id); else tests = tests.filter(t => t.id !== id);
-                saveAll(); showToast("予定を削除しました", 'danger'); closeDetail();
-            }
+            showConfirmModal(
+                "項目の削除", 
+                "この予定を時間割から完全に削除しますか？\n（この操作は取り消せません）", 
+                function() {
+                    if(type === 'task') tasks = tasks.filter(t => t.id !== id); 
+                    else tests = tests.filter(t => t.id !== id);
+                    saveAll(); 
+                    showToast("予定を削除しました", 'danger'); 
+                    closeDetail();
+                }
+            );
         }
 
         function completeItem(type, id) {
