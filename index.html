@@ -263,6 +263,11 @@
                         ※上のQRコードをタップすると大画面表示になります。
                     </p>
                     
+                    <div id="androidWidgetInstallerArea" style="display:none; margin-top:10px; padding:10px; background:#1e293b; border:1px dashed var(--accent); border-radius:8px;">
+                        <p style="font-size:11px; margin:0 0 8px 0; color:var(--text-muted); text-align:center;">長押しでホーム追加できないAndroid用ボタン</p>
+                        <button class="sync-btn" style="background:var(--accent); margin-bottom:0;" onclick="triggerAndroidAppInstall()">このアプリをホーム画面に追加</button>
+                    </div>
+
                     <hr style="border-color:#334155; margin:15px 0;">
                     <p style="font-size:11px; color:var(--text-muted); text-align:center;"><b>【バックアップ用同期コード】</b></p>
                     <button class="sync-btn" style="background:#475569;" onclick="exportData()">コードを書き出す</button>
@@ -405,6 +410,7 @@
         const password = "ippei";
         let weekOffset = 0;
         let lastGeneratedUrl = ""; 
+        let deferredPrompt = null; // Androidのインストール命令保持用
 
         // アプリ起動時の自動ログイン判定
         window.addEventListener('DOMContentLoaded', function() {
@@ -414,6 +420,31 @@
                 init();
             }
         });
+
+        // 🚀 Android専用：ブラウザがホーム追加可能状態になったのをキャッチする
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e; // 命令を記憶
+            // ショートカットが作れない環境向けに、画面内の「追加支援ボタン」を表示する
+            const installerArea = document.getElementById("androidWidgetInstallerArea");
+            if(installerArea) installerArea.style.display = "block";
+        });
+
+        // 🚀 ボタンが押されたら、スマホ公式の追加確認ポップアップを展開する
+        function triggerAndroidAppInstall() {
+            if (!deferredPrompt) {
+                showToast("すでにアプリが登録されているか、非対応のブラウザ（LINE内など）です。Chromeで開き直してください。", 'warning');
+                return;
+            }
+            deferredPrompt.prompt(); // ポップアップを展開
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    showToast("ホーム画面に追加リクエストを送信しました！", 'task');
+                    document.getElementById("androidWidgetInstallerArea").style.display = "none";
+                }
+                deferredPrompt = null;
+            });
+        }
 
         function checkPassword() {
             if (document.getElementById("pwInput").value === password) {
