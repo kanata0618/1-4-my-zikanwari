@@ -76,7 +76,7 @@
         .date-section { min-width: 200px; }
         #todayBox { font-size: 28px; font-weight: 800; margin-bottom: 0; }
 
-        /* ナビゲーションボタン（表の外に移動してレイアウト崩れを防止） */
+        /* ナビゲーションボタン */
         .th-nav-btn {
             background: var(--bg-card); border: 1px solid #334155; color: white;
             font-size: 14px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
@@ -94,7 +94,7 @@
         .deadline h3 { margin: 0 0 10px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid #334155; padding-bottom: 5px; }
         #quickMemoInput { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; padding: 8px; height: 80px; width: 100%; resize: none; box-sizing: border-box; outline: none; }
 
-        /* テーブル設定（ズレのない綺麗な6列構成） */
+        /* テーブル設定（均等6列） */
         .table-container { overflow-x: auto; overflow-y: hidden; position: relative; }
         table { width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed; min-width: 900px; transition: transform 0.3s ease, opacity 0.3s ease; }
         .slide-left { transform: translateX(-50px); opacity: 0; }
@@ -121,7 +121,7 @@
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; cursor: default !important; border: none !important; }
 
-        /* ポップアップ関連 */
+        /* ポップアップ */
         .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; }
         .popup-content { background: #111827; width: 900px; max-width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 25px; padding: 40px; position: relative; border: 1px solid #334155; }
         .close { position: absolute; top: 20px; right: 25px; font-size: 30px; cursor: pointer; color: var(--text-muted); }
@@ -148,9 +148,25 @@
         
         .month-list-item { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .month-list-item:hover { border-color: var(--accent); background: var(--bg-hover); }
+
+        /* 画面内トースト通知用の追加スタイル */
+        #toastContainer {
+            position: fixed; top: 20px; right: 20px; z-index: 99999;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast-notification {
+            background: #1e293b; border: 1px solid #334155; color: white;
+            padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px;
+            transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .toast-notification.show { transform: translateX(0); }
+        .toast-icon { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body>
+
+    <div id="toastContainer"></div>
 
     <div id="loginContainer">
         <div class="login-box">
@@ -312,6 +328,28 @@
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
+        // 画面内通知（トースト）を出すシステム
+        function showToast(message, type) {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = "toast-notification";
+            
+            // 課題なら水色、テストなら黄色で丸アイコンの色分け
+            const color = type === 'task' ? 'var(--accent)' : 'var(--warning)';
+            toast.innerHTML = `<span class="toast-icon" style="background:${color};"></span>${message}`;
+            
+            container.appendChild(toast);
+            
+            // アニメーションを効かせて表示
+            setTimeout(() => toast.classList.add("show"), 50);
+            
+            // 3秒後にスライドして消し、要素を削除する
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         function moveWeek(direction) {
             const table = document.getElementById("timetable");
             table.classList.add(direction === 1 ? "slide-right" : "slide-left");
@@ -346,7 +384,6 @@
             }
         }
 
-        // 余計な処理を排除した、一番綺麗で安全な表の生成コードに戻しました
         function renderTimetable() {
             const tbody = document.getElementById("timetableBody");
             tbody.innerHTML = "";
@@ -394,8 +431,12 @@
             const newItem = { subject: currentSubject, title: titleInput.value, date: dateInput.value, note: noteInput.value, id: Date.now(), type: type };
             (type === 'task' ? tasks : tests).push(newItem);
             
+            const itemLabel = type === 'task' ? "課題" : "テスト";
             titleInput.value = ""; dateInput.value = ""; noteInput.value = "";
-            saveAll(); renderPopupLists(); highlightStatus(); alert("追加しました！");
+            saveAll(); renderPopupLists(); highlightStatus();
+            
+            // 修正箇所：ブラウザのalertを廃止し、自作の画面内トースト通知を呼び出す
+            showToast(`${currentSubject}の${itemLabel}を追加しました！`, type);
         }
 
         function renderPopupLists() {
@@ -476,25 +517,32 @@
             item.title = document.getElementById("editTitle").value;
             item.date = document.getElementById("editDate").value;
             item.note = document.getElementById("editNote").value;
-            saveAll(); alert("保存しました！"); closeDetail();
+            saveAll(); showToast("変更を保存しました！", type); closeDetail();
         }
 
         function deleteItem(type, id) {
             if(confirm("削除しますか？")) {
                 if(type === 'task') tasks = tasks.filter(t => t.id !== id); else tests = tests.filter(t => t.id !== id);
-                saveAll(); closeDetail();
+                saveAll(); showToast("削除しました", 'task'); closeDetail();
             }
         }
 
         function completeItem(type, id) {
             let list = (type === 'task' ? tasks : tests);
             let idx = list.findIndex(t => t.id === id);
-            if(idx > -1) { let item = list.splice(idx, 1)[0]; item.type = type; completed.push(item); saveAll(); }
+            if(idx > -1) { 
+                let item = list.splice(idx, 1)[0]; item.type = type; completed.push(item); saveAll(); 
+                showToast("提出済みに移動しました！", 'task');
+            }
         }
 
         function undoItem(id) {
             let idx = completed.findIndex(c => c.id === id);
-            if(idx > -1) { let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); }
+            if(idx > -1) { 
+                let item = completed.splice(idx, 1)[0]; (item.type === 'task' ? tasks : tests).push(item); saveAll(); 
+                showToast("予定を未完了に戻しました", item.type);
+                renderPopupLists(); refreshGlobalAlerts(); highlightStatus(); 
+            }
         }
 
         function closeDetail() { document.getElementById("detailPopup").style.display = "none"; renderPopupLists(); highlightStatus(); refreshGlobalAlerts(); }
@@ -505,7 +553,6 @@
             localStorage.setItem("completed", JSON.stringify(completed));
         }
 
-        // 安全対策：もし古いデータに日付が入っていなくても裏でエラーにならないようにガード
         function getStatusLabel(dateStr) {
             if (!dateStr) return '<span class="alert-label" style="background:#64748b; color:white;">未定</span>';
             const today = new Date(); today.setHours(0,0,0,0);
