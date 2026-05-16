@@ -459,18 +459,15 @@
             renderTimetable(); setDates(); updateClock(); highlightStatus(); refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
             checkUrlImport(); 
-            checkAndroidShortcut(); // Android用ウィジェットショートカットの起動判定
+            checkAndroidShortcut(); 
         }
 
-        // 🚀 Android専用：ショートカットリンクから起動された時の表示切り替え
         function checkAndroidShortcut() {
             const urlParams = new URLSearchParams(window.location.search);
             const shortcutType = urlParams.get('shortcut');
             if (shortcutType === 'today') {
-                // 「今日の時間割」が押されたら、自動で現在の曜日クラスが付いているマスだけをハイライトする等に誘導できます
                 showToast("【ウィジェット起動】今日の予定を表示中", 'task');
             } else if (shortcutType === 'tasks') {
-                // 「直近の課題」が押されたら、自動で一ヶ月課題リストをポップアップ
                 setTimeout(() => openMonthOverview('task'), 300);
             }
         }
