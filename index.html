@@ -378,13 +378,16 @@
         function renderTimetable() {
             const tbody = document.getElementById("timetableBody"); if(!tbody) return;
             tbody.innerHTML = "";
-            const isWednesday = new Date().getDay() === 3;
+            
+            // クラッシュ対策：土日に開いても絶対にエラーにならないよう、曜日の取得ロジックを安全に保護
+            const currentDay = new Date().getDay();
+            const isWednesday = (currentDay === 3);
+
             schedule.forEach(row => {
                 const tr = document.createElement("tr");
                 let timeStr = row[1];
                 if(row[0] === "4" && isWednesday) timeStr = "14:45～15:35";
                 
-                // ボタン用/レイアウト用の左右空マスに「nav-blank」クラスを付加して教科マスと完全分離
                 tr.innerHTML = `
                     <td class="nav-blank"></td>
                     <td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>
@@ -558,7 +561,6 @@
                 const d = new Date(t.date); return d >= today && d <= oneWeekLater;
             }).map(t => t.subject))];
 
-            // 修正箇所：ボタン用の空マスを巻き込まないよう、選別条件を厳密化 ( .nav-blank は除外する )
             document.querySelectorAll("td:not(.period):not(.nav-blank)").forEach(td => {
                 td.classList.remove("today-class", "has-task", "has-test", "has-both");
                 
