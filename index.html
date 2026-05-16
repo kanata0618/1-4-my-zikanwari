@@ -183,7 +183,7 @@
                 </ul>
                 <h3>📊 1ヶ月分の予定表示</h3>
                 <ul>
-                    <li>ホーム右上の「直近の課題」または「直近のテスト」のカードを押すと、今後30日間の予定が一覧で大きくポップアップ表示されます。</li>
+                    <li>ホーム右上の「直近の課題」または「直近のテスト」のカードを押すと、今後 30 日間の予定が一覧で大きくポップアップ表示されます。</li>
                 </ul>
                 <h3>🎨 時間割の枠線ルール</h3>
                 <ul>
@@ -320,7 +320,11 @@
         ];
 
         function init() {
-            setDates(); renderTimetable(); updateClock(); highlightStatus(); refreshGlobalAlerts();
+            renderTimetable(); // 1. まず100%確実に時間割のマスを組み立てる
+            setDates();        // 2. その後に日付を安全に取得して反映する
+            updateClock(); 
+            highlightStatus(); 
+            refreshGlobalAlerts();
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
@@ -379,7 +383,7 @@
             const tbody = document.getElementById("timetableBody"); if(!tbody) return;
             tbody.innerHTML = "";
             
-            // クラッシュ対策：土日に開いても絶対にエラーにならないよう、曜日の取得ロジックを安全に保護
+            // クラッシュ対策：土日に開いても水曜日の特殊判定で絶対に止まらないように保護
             const currentDay = new Date().getDay();
             const isWednesday = (currentDay === 3);
 
