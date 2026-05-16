@@ -323,34 +323,25 @@
             document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
         }
 
-        // 矢印切り替えアニメーション制御（アニメーション方向を反対に修正）
         function moveWeek(direction) {
             const table = document.getElementById("timetable");
             if (!table) return;
 
-            // 1. スライドアウト（元の週を画面外へ）
-            // direction === 1 (次週) の時は右へ (slide-right)、
-            // direction === -1 (前週) の時は左へ (slide-left) スライドアウトさせる。
             table.classList.add(direction === 1 ? "slide-right" : "slide-left");
 
             setTimeout(() => {
-                // 2. データ更新
                 weekOffset += direction;
                 setDates();
                 highlightStatus();
 
-                // 3. スライドインの準備（新しい週を反対側から滑り込ませる）
                 table.classList.remove("slide-left", "slide-right");
-                // 新しい週を direction === 1 (次週) なら左 (slide-left) の位置に、
-                // direction === -1 (前週) なら右 (slide-right) の位置に配置する。
                 table.classList.add(direction === 1 ? "slide-left" : "slide-right");
 
-                // 4. スライドイン実行（ブラウザの再描画を挟んでクラスを削除）
                 setTimeout(() => {
                     table.classList.remove("slide-left", "slide-right");
                 }, 20);
 
-            }, 150); // フェードアウトの時間
+            }, 150);
         }
 
         function setDates() {
@@ -392,7 +383,6 @@
                 let timeStr = row[1];
                 if(row[0] === "4" && isWednesday) timeStr = "14:45～15:35";
                 
-                // 行のセル数もヘッダーと同じ全7列に完全同期
                 tr.innerHTML = `
                     <td style="background:transparent; pointer-events:none;"></td>
                     <td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>
