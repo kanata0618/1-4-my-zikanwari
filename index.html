@@ -139,8 +139,6 @@
         .period { width: 90px; height: 90px; background: var(--bg-card); border-radius: 18px; text-align: center; vertical-align: middle; color: #94a3b8; }
         td:not(.period) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
         
-        /* 課題・テスト時の枠線装飾クラスを削除 */
-        
         .today-class { border: 2px solid var(--accent) !important; }
         td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; cursor: default !important; border: none !important; }
@@ -224,7 +222,7 @@
     <div id="customConfirmModal" class="confirm-modal">
         <div class="confirm-box">
             <h3 id="modalTitle">確認</h3>
-            <p id="modalMessage">本当に実行しますか?</p>
+            <p id="modalMessage">本当に実行しますか？</p>
             <div class="confirm-btn-group">
                 <button id="modalCancelBtn" class="modal-btn btn-cancel">キャンセル</button>
                 <button id="modalOkBtn" class="modal-btn btn-ok">OK</button>
@@ -287,7 +285,7 @@
                 <div class="help-section">
                     <h3>📅 課題やテストを登録する</h3>
                     <ul>
-                        <li>時間割の<b>教科のマス</b>を直接タップすると、その教科専用の課題やテストを追加できます。</li>
+                        <li>時間割の<b>教科のマス</b>を直接タップすると、その教科専用 of 課題やテストを追加できます。</li>
                     </ul>
                     <h3>🔀 先週・来週の時間割を見る</h3>
                     <ul>
@@ -596,7 +594,6 @@
 
         function setDates() {
             const now = new Date(); const realDayNum = now.getDay(); 
-            // 【変更箇所】土曜日(6)または日曜日(0)になったら次の週を表示する設定
             let baseDiff = (realDayNum === 6 || realDayNum === 0) ? (realDayNum === 6 ? 2 : 1) : 0;
             const targetDate = new Date(now.getTime() + (baseDiff + weekOffset * 7) * 86400000);
             const mondayDiff = targetDate.getDay() === 0 ? -6 : 1 - targetDate.getDay();
@@ -697,22 +694,18 @@
             const now = new Date(); const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
             document.querySelectorAll("td:not(.period):not(.blank)").forEach(td => {
                 td.classList.remove("today-class");
-                // 【変更箇所】課題・テストの枠線クラス付与ロジックをすべて削除
                 if (weekOffset === 0 && td.classList.contains(realDayClass)) { td.classList.add("today-class"); }
             });
         }
 
         function refreshGlobalAlerts() {
             const d = new Date(); d.setHours(0,0,0,0);
-            // 【変更箇所】期限が1週間前（今日から7日後まで）のアイテムもホームに載せるよう変更
             const limitDate = new Date(d.getTime() + 7 * 86400000); 
-            
             const format = (t, type) => `<div class="alert-item" onclick="event.stopPropagation(); openDetail('${type}', ${t.id})">${getStatusLabel(t.date)}[${t.subject}] ${t.title}</div>`;
             
             const getFiltered = (data) => data.filter(t => {
                 if(!t.date) return false;
                 const targetTime = new Date(t.date);
-                // 期限切れ、もしくは今日から7日後までの予定を対象にする
                 return targetTime < d || (targetTime >= d && targetTime <= limitDate);
             }).sort((a,b) => new Date(a.date) - new Date(b.date));
             
@@ -723,10 +716,22 @@
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
         function updateClock() { document.getElementById("todayBox").innerText = `${new Date().getMonth()+1}月 ${new Date().getDate()}日 (${["日","月","火","水","木","金","土"][new Date().getDay()]})`; }
 
+        // 新しいサービスワーカーのアップデートを自動検知して画面をリロードするコード
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('sw.js').then(function(registration) {
                     console.log('PWA ServiceWorker 登録成功:', registration.scope);
+                    
+                    // 新しいサービスワーカー（アプデ）が裏でスタンバイしているか監視
+                    registration.addEventListener('updatefound', function() {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', function() {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // アプデが完了したら自動で画面をリロードして全員に最新のプログラムを適用
+                                window.location.reload();
+                            }
+                        });
+                    });
                 }, function(err) {
                     console.log('PWA ServiceWorker 登録失敗:', err);
                 });
