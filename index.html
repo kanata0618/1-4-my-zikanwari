@@ -107,7 +107,7 @@
         .day-label { display: block; font-size: 18px; font-weight: bold; }
         th.today-highlight { color: var(--accent); }
         .period { width: 90px; height: 90px; background: var(--bg-card); border-radius: 18px; text-align: center; vertical-align: middle; color: #94a3b8; }
-        td:not(.period) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
+        td:not(.period):not(.nav-blank) { background: var(--bg-card); border-radius: 18px; text-align: center; padding: 10px; height: 90px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
         
         .has-task { border: 2px dashed var(--task-border) !important; }
         .has-test { border: 2px dashed var(--danger) !important; }
@@ -119,8 +119,9 @@
         }
         
         .today-class { border: 2px solid var(--accent) !important; }
-        td:hover:not(.blank):not(.period) { background: var(--bg-hover); transform: translateY(-3px); }
+        td:hover:not(.blank):not(.period):not(.nav-blank) { background: var(--bg-hover); transform: translateY(-3px); }
         .blank { background: transparent !important; }
+        .nav-blank { background: transparent !important; }
 
         .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; }
         .popup-content { background: #111827; width: 900px; max-width: 95%; max-height: 90vh; overflow-y: auto; border-radius: 25px; padding: 40px; position: relative; border: 1px solid #334155; }
@@ -383,8 +384,9 @@
                 let timeStr = row[1];
                 if(row[0] === "4" && isWednesday) timeStr = "14:45～15:35";
                 
+                // ボタン用/レイアウト用の左右空マスに「nav-blank」クラスを付加して教科マスと完全分離
                 tr.innerHTML = `
-                    <td style="background:transparent; pointer-events:none;"></td>
+                    <td class="nav-blank"></td>
                     <td class="period"><span style="font-size:24px; font-weight:800;">${row[0]}</span><br><span style="font-size:10px; color:#64748b;">${timeStr}</span></td>
                 `;
                 for(let i=2; i<=6; i++) {
@@ -393,7 +395,7 @@
                     else { td.className = "blank"; }
                     tr.appendChild(td);
                 }
-                tr.innerHTML += `<td style="background:transparent; pointer-events:none;"></td>`;
+                tr.innerHTML += `<td class="nav-blank"></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -556,7 +558,8 @@
                 const d = new Date(t.date); return d >= today && d <= oneWeekLater;
             }).map(t => t.subject))];
 
-            document.querySelectorAll("td:not(.period)").forEach(td => {
+            // 修正箇所：ボタン用の空マスを巻き込まないよう、選別条件を厳密化 ( .nav-blank は除外する )
+            document.querySelectorAll("td:not(.period):not(.nav-blank)").forEach(td => {
                 td.classList.remove("today-class", "has-task", "has-test", "has-both");
                 
                 if (weekOffset === 0) {
