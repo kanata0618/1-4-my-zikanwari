@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1-4 my zikanwari</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
     <style>
         :root {
             --bg-main: #0f172a;
@@ -493,12 +499,10 @@
             document.getElementById("qrZoomModal").style.display = "none";
         }
 
-        // 📲 変更箇所：QRから読み込まれたらボタンを押さずに「完全自動インポート」する仕組み
         function checkUrlImport() {
             const urlParams = new URLSearchParams(window.location.search);
             const syncCode = urlParams.get('sync');
             if(syncCode) {
-                // 入力欄にコードをセットした上で、確認モーダルなしの完全サイレント自動インポートを実行
                 document.getElementById("importCodeInput").value = syncCode;
                 importData(true); 
             }
@@ -515,7 +519,6 @@
             } catch(e) { showToast("データ生成に失敗しました", 'danger'); }
         }
 
-        // 📲 変更箇所：自動処理(isAuto)フラグを追加。QR経由なら確認なしで一瞬で同期する
         function importData(isAuto) {
             const codeInput = document.getElementById("importCodeInput").value.trim();
             if(!codeInput) { 
@@ -532,11 +535,9 @@
                         localStorage.setItem("quickMemo", parsedData.quickMemo || "");
                         saveAll(); 
                         
-                        // データをメモリに格納してからリロード処理
                         document.getElementById("importCodeInput").value = "";
                         window.history.replaceState({}, document.title, window.location.href.split('?')[0]);
                         
-                        // 画面内の各パーツをリライト
                         renderTimetable(); setDates(); updateClock(); highlightStatus(); refreshGlobalAlerts();
                         document.getElementById("quickMemoInput").value = localStorage.getItem("quickMemo") || "";
                         
@@ -546,10 +547,8 @@
             };
 
             if(isAuto) {
-                // QRコード経由なら、ボタン確認を挟まずに即実行
                 coreLogic();
             } else {
-                // 手動での貼り付け読み込み時は安全のため確認モーダルを出す
                 showConfirmModal(
                     "データの同期・上書き",
                     "読み込んだデータに置き換えますか？\n（現在の予定はすべて消えて上書きされます）",
@@ -691,10 +690,6 @@
             return `<span class="alert-label" style="background:#059669; color:white;">${dateStr.slice(5)}</span>`;
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            // もしパスワードなし状態の起動確認をしたい場合はここで即init()を叩く
-        });
-
         function highlightStatus() {
             const now = new Date(); const realDayClass = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
             const today = new Date(); today.setHours(0,0,0,0); const oneWeekLater = new Date(today.getTime() + 7 * 86400000);
@@ -718,6 +713,17 @@
 
         function saveQuickMemo() { localStorage.setItem("quickMemo", document.getElementById("quickMemoInput").value); }
         function updateClock() { document.getElementById("todayBox").innerText = `${new Date().getMonth()+1}月 ${new Date().getDate()}日 (${["日","月","火","水","木","金","土"][new Date().getDay()]})`; }
+
+        // 🚀【超重要】最下部にサービスワーカー（ sw.js ）をブラウザに自動登録するコードを配置
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
+                    console.log('PWA ServiceWorker 登録成功:', registration.scope);
+                }, function(err) {
+                    console.log('PWA ServiceWorker 登録失敗:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
